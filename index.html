@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a73e8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Reporte Pesaje">
+<link rel="manifest" href="manifest.json">
+<title>Reporte Pesaje</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { font-family: Arial, sans-serif; background: #f0f0f0; max-width: 520px; margin: 0 auto; font-size: 16px; }
+.header { background: #1a73e8; padding: 10px 12px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 20; }
+.header-title { font-size: 15px; font-weight: bold; color: #fff; }
+.header-sub { font-size: 11px; color: rgba(255,255,255,0.8); }
+.sector-tabs { background: #fff; border-bottom: 2px solid #e0e0e0; display: flex; align-items: flex-end; padding-left: 8px; gap: 2px; overflow-x: auto; position: sticky; top: 52px; z-index: 19; }
+.sector-tab { padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: 4px 4px 0 0; border: 1px solid #e0e0e0; border-bottom: none; white-space: nowrap; background: #f1f3f4; color: #555; }
+.sector-tab.active { background: #fff; color: #1a73e8; font-weight: bold; margin-bottom: -2px; }
+.add-sector { padding: 6px 10px; font-size: 18px; cursor: pointer; color: #1a73e8; border: none; background: none; }
+.sub-tabs { background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; position: sticky; top: 90px; z-index: 18; }
+.sub-tab { flex: 1; border: none; border-bottom: 2px solid transparent; background: none; font-size: 12px; color: #888; padding: 8px 0; cursor: pointer; }
+.sub-tab.active { color: #1a73e8; font-weight: bold; border-bottom-color: #1a73e8; }
+.msg { padding: 8px 12px; font-size: 12px; font-weight: bold; border-bottom: 1px solid #e0e0e0; }
+.msg.ok { background: #e6f4ea; color: #1e7e34; }
+.msg.err { background: #fce8e6; color: #c62828; }
+.content { padding: 8px; padding-bottom: 70px; }
+.card { background: #fff; border: 1px solid #d0d7de; border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
+.card-header { color: #fff; font-size: 11px; font-weight: bold; padding: 4px 8px; }
+.card-header.blue { background: #1a73e8; }
+.card-header.green { background: #25D366; display: flex; justify-content: space-between; align-items: center; }
+.card-header.gray { background: #f1f3f4; color: #555; border-bottom: 1px solid #d0d7de; }
+.datos-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.dato-cell { border-right: 1px solid #d0d7de; padding: 6px; }
+.dato-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+.dato-input { width: 100%; border: none; background: transparent; font-size: 12px; padding: 0; outline: none; }
+.act-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.act-item { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 12px; }
+.act-item.active { background: #e8f0fe; color: #1a73e8; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: #1a73e8; color: #fff; font-weight: bold; font-size: 11px; padding: 6px 8px; border: 1px solid #1558b0; text-align: center; white-space: nowrap; }
+td { padding: 4px 6px; border: 1px solid #d0d7de; min-height: 28px; background: #fff; vertical-align: top; }
+tr:nth-child(even) td { background: #f8f9fa; }
+td.locked { background: #f1f3f4; color: #bbb; text-align: center; vertical-align: middle; }
+td.active-cell { background: #e8f0fe; border-color: #1a73e8; }
+td select, td input[type=text], td input[type=number] { width: 100%; border: none; background: transparent; font-size: 12px; padding: 0; outline: none; }
+td input.otro-input { width: 100%; border: none; border-top: 1px dashed #ccc; background: #fffde7; font-size: 12px; padding: 2px 0; outline: none; margin-top: 3px; display: block; }
+.add-fila { font-size: 12px; color: #1a73e8; background: none; border: none; cursor: pointer; padding: 6px 8px; }
+textarea { width: 100%; border: none; font-size: 12px; padding: 8px; resize: vertical; outline: none; min-height: 60px; font-family: Arial, sans-serif; }
+.btn { width: 100%; padding: 12px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; margin-bottom: 8px; }
+.btn-blue { background: #1a73e8; color: #fff; }
+.btn-green { background: #34a853; color: #fff; }
+.btn-gray { background: #f1f3f4; color: #555; }
+.btn-red { background: #fff; border: 1px solid #e53935 !important; color: #e53935; }
+.enviado-badge { background: #e6f4ea; border: 1px solid #34a853; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #1e7e34; margin-bottom: 8px; font-weight: bold; }
+pre { font-size: 12px; padding: 10px; white-space: pre-wrap; font-family: monospace; color: #333; background: #f9f9f9; min-height: 80px; }
+.copy-btn { font-size: 11px; padding: 2px 10px; border-radius: 4px; border: 1px solid #fff; background: transparent; color: #fff; cursor: pointer; }
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 520px; background: #fff; border-top: 1px solid #e0e0e0; display: flex; padding: 6px 0; z-index: 10; }
+.nav-btn { flex: 1; border: none; background: none; font-size: 12px; color: #888; padding: 4px 0; cursor: pointer; }
+.nav-btn.active { color: #1a73e8; font-weight: bold; }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.modal { background: #fff; border-radius: 8px; padding: 20px; width: 100%; max-width: 300px; }
+.modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.modal-btn { padding: 8px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="font-size:24px">📊</div>
+  <div>
+    <div class="header-title">Reporte Pesaje</div>
+    <div class="header-sub">Móvil 1 — Informe Sistemas de Pesaje</div>
+  </div>
+</div>
+
+<div class="sector-tabs" id="sectorTabs"></div>
+
+<div class="sub-tabs">
+  <button class="sub-tab active" id="tabDatos" onclick="switchTab('datos')">📋 Datos</button>
+  <button class="sub-tab" id="tabResumen" onclick="switchTab('resumen')">📤 WhatsApp</button>
+</div>
+
+<div id="msgBar" style="display:none" class="msg"></div>
+<div class="content" id="mainContent"></div>
+
+<div class="bottom-nav">
+  <button class="nav-btn active" id="navDatos" onclick="switchTab('datos')">📋 Datos</button>
+  <button class="nav-btn" id="navResumen" onclick="switchTab('resumen')">📤 WhatsApp</button>
+</div>
+
+<div id="overlay" class="overlay" style="display:none">
+  <div class="modal">
+    <div style="font-weight:bold;margin-bottom:8px">🗑 Eliminar sector</div>
+    <p id="modalMsg" style="font-size:13px;color:#555"></p>
+    <div class="modal-btns">
+      <button class="modal-btn" style="border:1px solid #ccc;background:#fff" onclick="closeModal()">Cancelar</button>
+      <button class="modal-btn" style="border:none;background:#e53935;color:#fff" onclick="doDelete()">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7mB9cTJQfJ7jNAOdi398vT-ejUVdhGZXq_GO0YSVaay5B8mz9Fh6sZ5-_xFj5TU8LQw/exec";
+
+var SECTORES = ["Las Murallas","Don Lalo","Don Tito","Don Ambrosio","Don Cornelio","Don Gastón","Don Wilson","Las Diucas","Los Pinos","Los Loros","Las Vegas","Matanza","Valdebenito","Alhue","Don Forster","Loica","Doña Ema","El Tucán","Don Rica","Las Cornizas","Longovilo","Santa Rosa","Dusset","Los Culenes","El Diputado","La Liguana","La Fiera","Demetrio","El Galeón","Casablanca","La Libreta","Don Feña"];
+var PABELLONES = ["1","2","3","4","5","6","7","8A","8B","9","10","11","12","13","14","15","16","17","18","19","20"];
+var SL = ["Silo 1","Silo 2","Silo 3","Silo 4","Lado A","Lado B"];
+var ACCIONES = ["Reparado","Pendiente","Cambiado"];
+var ACTIVIDADES = ["Revisión silos","Revisión flujómetros","Revisión pesaje pollos","Cambio caja electrónica","Cambio celda carga","Revisión sensores","Limpieza equipos","Calibración","Revisión cableado","Otro"];
+var REPUESTOS = ["Celda de Carga 3TON","Celda Tipo S 20Kg","Caja Electrónica Silo","Caja Electrónica Aves","Display LED","Display LCD","Fuente 24V","Fuente 12V","Tarjeta Sumadora","Tarjeta PCB","Tarjeta ESP","Kit Báscula","Sensor T°","Flujómetro","Cordón alimentación","Cadena","Mosquetón","Accesorios Kit Báscula","Otro (escribir)"];
+
+function todayStr() {
+  var d = new Date();
+  return String(d.getDate()).padStart(2,"0")+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+d.getFullYear();
+}
+function emptyFila() { return {pabellon:"",sl:"",celdas:"",accion:"",repuesto:"",repuestoOtro:"",cantidad:""}; }
+function emptySector() { return {sector:"",io:"",fecha:todayStr(),filas:[emptyFila()],actividades:[],observaciones:"",enviado:false,resumengenerado:false,idBase:"",resumenTxt:""}; }
+
+var sectores = [emptySector()];
+var activeSector = 0;
+var currentTab = "datos";
+var confirmDeleteIdx = null;
+
+function render() { renderTabs(); renderContent(); }
+
+function renderTabs() {
+  var html = "";
+  for (var i = 0; i < sectores.length; i++) {
+    var s = sectores[i];
+    html += '<div class="sector-tab '+(i===activeSector?"active":"")+'" onclick="switchSector('+i+')">'+(s.enviado?"✅ ":"")+(s.sector||"Sector "+(i+1))+'</div>';
+  }
+  html += '<button class="add-sector" onclick="addSector()">＋</button>';
+  document.getElementById("sectorTabs").innerHTML = html;
+}
+
+function renderContent() {
+  var s = sectores[activeSector];
+  document.getElementById("mainContent").innerHTML = currentTab==="datos" ? renderDatos(s) : renderResumen(s);
+}
+
+function renderDatos(s) {
+  var sectOpts = '<option value="">— Elegir —</option>';
+  for (var i = 0; i < SECTORES.length; i++)
+    sectOpts += '<option'+(s.sector===SECTORES[i]?' selected':'')+'>'+SECTORES[i]+'</option>';
+  var actHtml = "";
+  for (var i = 0; i < ACTIVIDADES.length; i++) {
+    var act = ACTIVIDADES[i];
+    var isAct = s.actividades.indexOf(act) > -1;
+    actHtml += '<div class="act-item'+(isAct?" active":"")+'" onclick="toggleAct('+i+')">'
+      +'<input type="checkbox"'+(isAct?" checked":"")+'style="width:14px;height:14px;flex-shrink:0">'
+      +'<span>'+act+'</span></div>';
+  }
+  var filasHtml = "";
+  for (var fi = 0; fi < s.filas.length; fi++) {
+    var f = s.filas[fi];
+    var pabOpts = '<option value="">—</option>';
+    for (var k = 0; k < PABELLONES.length; k++)
+      pabOpts += '<option'+(f.pabellon===PABELLONES[k]?' selected':'')+'>'+PABELLONES[k]+'</option>';
+    var slOpts = '<option value="">—</option>';
+    for (var k = 0; k < SL.length; k++)
+      slOpts += '<option'+(f.sl===SL[k]?' selected':'')+'>'+SL[k]+'</option>';
+    var accOpts = '<option value="">—</option>';
+    for (var k = 0; k < ACCIONES.length; k++)
+      accOpts += '<option'+(f.accion===ACCIONES[k]?' selected':'')+'>'+ACCIONES[k]+'</option>';
+    var repOpts = '<option value="">—</option>';
+    for (var k = 0; k < REPUESTOS.length; k++)
+      repOpts += '<option'+(f.repuesto===REPUESTOS[k]?' selected':'')+'>'+REPUESTOS[k]+'</option>';
+    var celdasCell = f.sl && f.sl.indexOf("Silo")===0
+      ? '<td class="active-cell"><input type="text" value="'+(f.celdas||"")+'" placeholder="1,2..." onchange="updateCeldas('+fi+',this.value)"></td>'
+      : '<td class="locked">—</td>';
+    var repuestoCell = '<td>'
+      +'<select onchange="updateRepuesto('+fi+',this.value)">'+repOpts+'</select>'
+      +(f.repuesto==="Otro (escribir)"
+        ? '<input class="otro-input" type="text" placeholder="Escribe el repuesto..." value="'+(f.repuestoOtro||"")+'" onchange="updateFila('+fi+',\'repuestoOtro\',this.value)">'
+        : '')
+      +'</td>';
+    var delBtn = s.filas.length > 1
+      ? '<button onclick="removeFila('+fi+')" style="background:none;border:none;color:#e53935;cursor:pointer;font-size:14px">✕</button>' : "";
+    filasHtml += '<tr>'
+      +'<td style="text-align:center;color:#888;font-size:11px;vertical-align:middle">'+(fi+1)+'</td>'
+      +'<td><select onchange="updateFila('+fi+',\'pabellon\',this.value)">'+pabOpts+'</select></td>'
+      +'<td><select onchange="updateSL('+fi+',this.value)">'+slOpts+'</select></td>'
+      +celdasCell
+      +'<td><select onchange="updateFila('+fi+',\'accion\',this.value)">'+accOpts+'</select></td>'
+      +repuestoCell
+      +'<td style="text-align:center;background:#f8f9fa;vertical-align:middle"><input type="number" min="1" value="'+(f.cantidad||"")+'" style="width:36px;text-align:center" onchange="updateFila('+fi+',\'cantidad\',this.value)"></td>'
+      +'<td style="text-align:center;vertical-align:middle">'+delBtn+'</td>'
+      +'</tr>';
+  }
+  return '<div class="card">'
+    +'<div class="card-header blue">DATOS DEL SECTOR</div>'
+    +'<div class="datos-grid">'
+    +'<div class="dato-cell"><div class="dato-label">Fecha</div><input class="dato-input" value="'+s.fecha+'" onchange="updateSector(\'fecha\',this.value)" placeholder="DD-MM-AAAA"></div>'
+    +'<div class="dato-cell"><div class="dato-label">Sector</div><select class="dato-input" onchange="updateSector(\'sector\',this.value)">'+sectOpts+'</select></div>'
+    +'<div class="dato-cell"><div class="dato-label">N° IO</div><input class="dato-input" value="'+s.io+'" onchange="updateSector(\'io\',this.value)" placeholder="Ej: 81292"></div>'
+    +'</div></div>'
+    +'<div class="card"><div class="card-header blue">ACTIVIDADES — '+s.actividades.length+' seleccionadas</div>'
+    +'<div class="act-grid">'+actHtml+'</div></div>'
+    +'<div class="card"><div class="card-header blue">INTERVENCIONES</div>'
+    +'<div style="overflow-x:auto"><table><thead><tr>'
+    +'<th>#</th><th>Pabellón</th><th>S/L</th><th>Celda(s)</th><th>Acción</th><th>Repuesto</th><th>Cant.</th><th></th>'
+    +'</tr></thead><tbody>'+filasHtml+'</tbody></table></div>'
+    +'<button class="add-fila" onclick="addFila()">+ Agregar fila</button></div>'
+    +'<div class="card"><div class="card-header gray">📝 OBSERVACIONES</div>'
+    +'<textarea placeholder="Información relevante del sector..." onchange="updateSector(\'observaciones\',this.value)">'+s.observaciones+'</textarea></div>'
+    +(sectores.length>1 ? '<button class="btn btn-red" onclick="confirmarEliminar('+activeSector+')">🗑 Eliminar este sector</button>' : '');
+}
+
+function renderResumen(s) {
+  var html = '<div class="card"><div class="card-header green"><span>📤 RESUMEN WHATSAPP</span>'
+    +(s.resumenTxt ? '<button class="copy-btn" onclick="copiarResumen()">📋 Copiar</button>' : '')
+    +'</div><pre id="resumenPre">'+(s.resumenTxt||"Presiona 'Generar resumen' para ver el texto.")+'</pre></div>';
+  if (!s.enviado) html += '<button class="btn btn-blue" onclick="generarResumen()">'+(s.resumengenerado?'🔄 Regenerar resumen WhatsApp':'📄 Generar resumen WhatsApp')+'</button>';
+  if (s.resumengenerado && !s.enviado) html += '<button class="btn btn-green" onclick="enviarBD()">✅ Enviar a base de datos</button>';
+  if (s.enviado) {
+    html += '<div class="enviado-badge">✅ Datos en BD — ID: '+s.idBase+'</div>';
+    html += '<button class="btn btn-gray" onclick="limpiarHoja()">🧹 Limpiar para nuevo reporte</button>';
+  }
+  return html;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById("tabDatos").className = "sub-tab"+(tab==="datos"?" active":"");
+  document.getElementById("tabResumen").className = "sub-tab"+(tab==="resumen"?" active":"");
+  document.getElementById("navDatos").className = "nav-btn"+(tab==="datos"?" active":"");
+  document.getElementById("navResumen").className = "nav-btn"+(tab==="resumen"?" active":"");
+  renderContent();
+}
+
+function switchSector(i) { activeSector=i; currentTab="datos"; render(); }
+function addSector() { sectores.push(emptySector()); activeSector=sectores.length-1; currentTab="datos"; render(); }
+function updateSector(field,val) { sectores[activeSector][field]=val; renderTabs(); }
+function updateFila(fi,field,val) { sectores[activeSector].filas[fi][field]=val; }
+function addFila() { sectores[activeSector].filas.push(emptyFila()); renderContent(); }
+function removeFila(fi) { sectores[activeSector].filas.splice(fi,1); renderContent(); }
+
+function updateSL(fi,val) {
+  sectores[activeSector].filas[fi].sl=val;
+  sectores[activeSector].filas[fi].celdas="";
+  sectores[activeSector].filas[fi].cantidad=val.indexOf("Lado")===0?"1":"";
+  renderContent();
+}
+
+function updateCeldas(fi,val) {
+  sectores[activeSector].filas[fi].celdas=val;
+  var n=val.split(/[\s,\-\.]+/).filter(function(x){return x.trim()!=="";});
+  sectores[activeSector].filas[fi].cantidad=n.length>0?String(n.length):"";
+}
+
+function updateRepuesto(fi,val) {
+  sectores[activeSector].filas[fi].repuesto=val;
+  if (val!=="Otro (escribir)") sectores[activeSector].filas[fi].repuestoOtro="";
+  renderContent();
+}
+
+function toggleAct(i) {
+  var s=sectores[activeSector];
+  var act=ACTIVIDADES[i];
+  var idx=s.actividades.indexOf(act);
+  if (idx>-1) s.actividades.splice(idx,1);
+  else s.actividades.push(act);
+  renderContent();
+}
+
+function getRepuestoFinal(f) {
+  return f.repuesto==="Otro (escribir)" ? (f.repuestoOtro||"") : f.repuesto;
+}
+
+function generarResumenSector(s) {
+  if (!s.sector||!s.io) return null;
+  var txt="────────────────────────────────\n";
+  txt+="Fecha: "+s.fecha+"\nSector: "+s.sector+"\nIO: "+s.io+"\n";
+  if (s.actividades.length) {
+    txt+="\n✅ Actividades:\n";
+    for (var i=0;i<s.actividades.length;i++) txt+="  • "+s.actividades[i]+"\n";
+  }
+  var rep=[],pen=[],cam=[];
+  for (var i=0;i<s.filas.length;i++) {
+    var f=s.filas[i];
+    if (!f.pabellon) continue;
+    var cantidad=f.cantidad;
+    if (f.sl&&f.sl.indexOf("Silo")===0&&f.celdas) {
+      var n=f.celdas.split(/[\s,\-\.]+/).filter(function(x){return x.trim()!=="";});
+      if (n.length>0) cantidad=String(n.length);
+    }
+    var rep_final=getRepuestoFinal(f);
+    var linea="  Pab "+f.pabellon+(f.sl?" - "+f.sl:"")+(rep_final?", "+rep_final:"")+(f.celdas?" N°"+f.celdas:"")+(cantidad?" (x"+cantidad+")":"");
+    if (f.accion==="Reparado") rep.push(linea);
+    else if (f.accion==="Pendiente") pen.push(linea);
+    else if (f.accion==="Cambiado") cam.push({linea:linea,repuesto:rep_final,cantidad:cantidad});
+  }
+  if (rep.length) txt+="\n🟢 Reparado:\n"+rep.join("\n")+"\n";
+  if (pen.length) txt+="\n🔴 Pendiente:\n"+pen.join("\n")+"\n";
+  if (cam.length) {
+    txt+="\n🔵 Cambiado:\n";
+    for (var i=0;i<cam.length;i++) txt+=cam[i].linea+"\n";
+    var resMap={};
+    for (var i=0;i<cam.length;i++) if(cam[i].repuesto) resMap[cam[i].repuesto]=(cam[i].cantidad||"1")+"x "+cam[i].repuesto;
+    var resArr=[]; for(var k in resMap) resArr.push(resMap[k]);
+    if (resArr.length) txt+="\n📦 Resumen cambios:\n"+resArr.join("\n")+"\n";
+  }
+  if (s.observaciones&&s.observaciones.trim()) txt+="\n📝 Observaciones: "+s.observaciones.trim()+"\n";
+  return txt;
+}
+
+function generarResumen() {
+  var sinDatos=true;
+  for (var i=0;i<sectores.length;i++) if(sectores[i].sector&&sectores[i].io){sinDatos=false;break;}
+  if (sinDatos){showMsg("⚠️ Completa al menos un Sector e IO.",false);return;}
+  var txt="INFORME SISTEMAS DE PESAJE\n";
+  for (var i=0;i<sectores.length;i++){var b=generarResumenSector(sectores[i]);if(b)txt+="\n"+b;}
+  sectores[activeSector].resumenTxt=txt;
+  sectores[activeSector].resumengenerado=true;
+  switchTab("resumen");
+  showMsg("✅ Resumen generado. Cópialo y luego envía a BD.");
+}
+
+function copiarResumen() {
+  var txt=sectores[activeSector].resumenTxt;
+  if (navigator.clipboard) navigator.clipboard.writeText(txt);
+  showMsg("📋 Copiado al portapapeles.");
+}
+
+function enviarBD() {
+  var s=sectores[activeSector];
+  if (!s.resumengenerado){showMsg("⚠️ Primero genera el resumen.",false);return;}
+  if (s.enviado){showMsg("ℹ️ Ya fue enviado.",false);return;}
+  showMsg("⏳ Enviando datos...");
+  var filas=[];
+  for(var i=0;i<s.filas.length;i++){
+    var f=s.filas[i];
+    filas.push({pabellon:f.pabellon,sl:f.sl,celdas:f.celdas,accion:f.accion,repuesto:getRepuestoFinal(f),cantidad:f.cantidad});
+  }
+  var datos={fecha:s.fecha,sector:s.sector,io:s.io,actividades:s.actividades,observaciones:s.observaciones,filas:filas};
+  fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(datos)
+  }).then(function() {
+    var idBase="M1-"+s.fecha.replace(/-/g,"");
+    sectores[activeSector].enviado=true;
+    sectores[activeSector].idBase=idBase;
+    showMsg("✅ Datos enviados correctamente.");
+    render();
+  }).catch(function(err){
+    showMsg("❌ Error de conexión. Reintenta cuando haya internet.",false);
+  });
+}
+
+function limpiarHoja() {
+  var sector=sectores[activeSector].sector;
+  sectores[activeSector]=emptySector();
+  sectores[activeSector].sector=sector;
+  currentTab="datos"; render();
+  showMsg("✅ Hoja limpia para nuevo reporte.");
+}
+
+function confirmarEliminar(i) {
+  confirmDeleteIdx=i;
+  var s=sectores[i];
+  var msg=s.enviado
+    ?"Los datos de "+(s.sector||"Sector "+(i+1))+" ya están en la BD. ¿Eliminar esta hoja?"
+    :"⚠️ Los datos de "+(s.sector||"Sector "+(i+1))+" NO han sido enviados. Se perderán. ¿Eliminar igual?";
+  document.getElementById("modalMsg").textContent=msg;
+  document.getElementById("overlay").style.display="flex";
+}
+function closeModal(){ document.getElementById("overlay").style.display="none"; }
+function doDelete(){
+  sectores.splice(confirmDeleteIdx,1);
+  activeSector=Math.max(0,confirmDeleteIdx-1);
+  closeModal(); render();
+}
+
+function showMsg(txt,ok){
+  if(ok===undefined) ok=true;
+  var el=document.getElementById("msgBar");
+  el.textContent=txt; el.className="msg "+(ok?"ok":"err");
+  el.style.display="block";
+  setTimeout(function(){el.style.display="none";},3500);
+}
+
+// Service Worker para PWA offline
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+render();
+</script>
+</body>
+</html>
