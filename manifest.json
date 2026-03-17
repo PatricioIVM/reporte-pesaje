@@ -1,7 +1,7 @@
 {
   "name": "Reporte Pesaje",
   "short_name": "Reporte",
-  "start_url": "/reporte-pesaje/",
+  "start_url": "https://patricioivm.github.io/reporte-pesaje/",
   "display": "standalone",
   "background_color": "#f0f0f0",
   "theme_color": "#1a73e8",
