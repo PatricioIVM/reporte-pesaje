@@ -384,11 +384,53 @@ function showMsg(txt,ok){
   setTimeout(function(){el.style.display="none";},3500);
 }
 
+// ── LocalStorage ──────────────────────────────
+function guardarEstado() {
+  try {
+    localStorage.setItem("reporte_pesaje_m1", JSON.stringify({
+      sectores: sectores,
+      activeSector: activeSector,
+      currentTab: currentTab
+    }));
+  } catch(e) {}
+}
+
+function cargarEstado() {
+  try {
+    var data = localStorage.getItem("reporte_pesaje_m1");
+    if (data) {
+      var estado = JSON.parse(data);
+      if (estado.sectores && estado.sectores.length > 0) {
+        sectores = estado.sectores;
+        activeSector = estado.activeSector || 0;
+        currentTab = estado.currentTab || "datos";
+      }
+    }
+  } catch(e) {}
+}
+
+// Guardar en cada acción
+var _updateSector = updateSector;
+updateSector = function(field, val) { _updateSector(field, val); guardarEstado(); };
+var _updateFila = updateFila;
+updateFila = function(fi, field, val) { _updateFila(fi, field, val); guardarEstado(); };
+var _addFila = addFila;
+addFila = function() { _addFila(); guardarEstado(); };
+var _removeFila = removeFila;
+removeFila = function(fi) { _removeFila(fi); guardarEstado(); };
+var _addSector = addSector;
+addSector = function() { _addSector(); guardarEstado(); };
+var _toggleAct = toggleAct;
+toggleAct = function(i) { _toggleAct(i); guardarEstado(); };
+var _limpiarHoja = limpiarHoja;
+limpiarHoja = function() { _limpiarHoja(); guardarEstado(); };
+
 // Service Worker para PWA offline
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
 
+cargarEstado();
 render();
 </script>
 </body>
