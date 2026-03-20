@@ -39,14 +39,24 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; width: 100%; max-wid
 .act-grid { display: grid; grid-template-columns: 1fr 1fr; }
 .act-item { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .act-item.active { background: #e8f0fe; color: #1a73e8; }
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th { background: #1a73e8; color: #fff; font-weight: bold; font-size: 11px; padding: 6px 8px; border: 1px solid #1558b0; text-align: center; white-space: nowrap; }
-td { padding: 4px 6px; border: 1px solid #d0d7de; min-height: 28px; background: #fff; vertical-align: top; }
+.act-item input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: #1a73e8; }
+.act-otro { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; background: #fffde7; }
+.act-otro input { width: 100%; border: none; border-bottom: 1px solid #ccc; background: transparent; font-size: 13px; padding: 4px 0; outline: none; }
+.estado-grid { display: flex; flex-direction: column; }
+.estado-item { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.estado-item.active { background: #e8f0fe; }
+.estado-item input[type=checkbox] { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: #1a73e8; cursor: pointer; }
+.estado-label { font-size: 13px; font-weight: bold; color: #333; }
+.estado-sub { font-size: 11px; color: #888; margin-top: 2px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { background: #1a73e8; color: #fff; font-weight: bold; font-size: 12px; padding: 8px; border: 1px solid #1558b0; text-align: center; white-space: nowrap; }
+td { padding: 6px; border: 1px solid #d0d7de; min-height: 32px; background: #fff; vertical-align: top; }
 tr:nth-child(even) td { background: #f8f9fa; }
 td.locked { background: #f1f3f4; color: #bbb; text-align: center; vertical-align: middle; }
 td.active-cell { background: #e8f0fe; border-color: #1a73e8; }
-td select, td input[type=text], td input[type=number] { width: 100%; border: none; background: transparent; font-size: 12px; padding: 0; outline: none; }
-td input.otro-input { width: 100%; border: none; border-top: 1px dashed #ccc; background: #fffde7; font-size: 12px; padding: 2px 0; outline: none; margin-top: 3px; display: block; }
+td select, td input[type=text], td input[type=number] { width: 100%; border: none; background: transparent; font-size: 13px; padding: 0; outline: none; }
+td input.otro-input { width: 100%; border: none; border-top: 1px dashed #ccc; background: #fffde7; font-size: 13px; padding: 2px 0; outline: none; margin-top: 3px; display: block; }
+.sl-cell { min-width: 90px; }
 .add-fila { font-size: 12px; color: #1a73e8; background: none; border: none; cursor: pointer; padding: 6px 8px; }
 textarea { width: 100%; border: none; font-size: 12px; padding: 8px; resize: vertical; outline: none; min-height: 60px; font-family: Arial, sans-serif; }
 .btn { width: 100%; padding: 12px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; margin-bottom: 8px; }
@@ -57,7 +67,7 @@ textarea { width: 100%; border: none; font-size: 12px; padding: 8px; resize: ver
 .enviado-badge { background: #e6f4ea; border: 1px solid #34a853; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #1e7e34; margin-bottom: 8px; font-weight: bold; }
 pre { font-size: 12px; padding: 10px; white-space: pre-wrap; font-family: monospace; color: #333; background: #f9f9f9; min-height: 80px; }
 .copy-btn { font-size: 11px; padding: 2px 10px; border-radius: 4px; border: 1px solid #fff; background: transparent; color: #fff; cursor: pointer; }
-.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 520px; background: #fff; border-top: 1px solid #e0e0e0; display: flex; padding: 6px 0; z-index: 10; }
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; background: #fff; border-top: 1px solid #e0e0e0; display: flex; padding: 6px 0; z-index: 10; }
 .nav-btn { flex: 1; border: none; background: none; font-size: 12px; color: #888; padding: 4px 0; cursor: pointer; }
 .nav-btn.active { color: #1a73e8; font-weight: bold; }
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; }
@@ -109,15 +119,21 @@ var SECTORES = ["Las Murallas","Don Lalo","Don Tito","Don Ambrosio","Don Corneli
 var PABELLONES = ["1","2","3","4","5","6","7","8A","8B","9","10","11","12","13","14","15","16","17","18","19","20"];
 var SL = ["Silo 1","Silo 2","Silo 3","Silo 4","Lado A","Lado B"];
 var ACCIONES = ["Reparado","Pendiente","Cambiado"];
-var ACTIVIDADES = ["Revisión silos","Revisión flujómetros","Revisión pesaje pollos","Cambio caja electrónica","Cambio celda carga","Revisión sensores","Limpieza equipos","Calibración","Revisión cableado","Otro"];
+var ACTIVIDADES = ["Revisión silos","Revisión flujómetros","Revisión pesaje pollos","Cambio caja electrónica","Cambio celda carga","Revisión sensores","Limpieza equipos","Calibración","Revisión cableado","Otro (especificar)"];
 var REPUESTOS = ["Celda de Carga 3TON","Celda Tipo S 20Kg","Caja Electrónica Silo","Caja Electrónica Aves","Display LED","Display LCD","Fuente 24V","Fuente 12V","Tarjeta Sumadora","Tarjeta PCB","Tarjeta ESP","Kit Báscula","Sensor T°","Flujómetro","Cordón alimentación","Cadena","Mosquetón","Accesorios Kit Báscula","Otro (escribir)"];
+var ESTADOS = [
+  {label:"Sector operativo", sub:""},
+  {label:"Informe retirado", sub:""},
+  {label:"Pendiente retiro de informe", sub:""},
+  {label:"Pendiente por desabastecimiento", sub:"Intervención en espera de reposición de stock"}
+];
 
 function todayStr() {
   var d = new Date();
   return String(d.getDate()).padStart(2,"0")+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+d.getFullYear();
 }
 function emptyFila() { return {pabellon:"",sl:"",celdas:"",accion:"",repuesto:"",repuestoOtro:"",cantidad:""}; }
-function emptySector() { return {sector:"",io:"",fecha:todayStr(),filas:[emptyFila()],actividades:[],observaciones:"",enviado:false,resumengenerado:false,idBase:"",resumenTxt:""}; }
+function emptySector() { return {sector:"",io:"",fecha:todayStr(),filas:[emptyFila()],actividades:[],actOtro:"",estados:[],observaciones:"",enviado:false,resumengenerado:false,idBase:"",resumenTxt:""}; }
 
 var sectores = [emptySector()];
 var activeSector = 0;
@@ -145,14 +161,24 @@ function renderDatos(s) {
   var sectOpts = '<option value="">— Elegir —</option>';
   for (var i = 0; i < SECTORES.length; i++)
     sectOpts += '<option'+(s.sector===SECTORES[i]?' selected':'')+'>'+SECTORES[i]+'</option>';
+
+  // Actividades
   var actHtml = "";
   for (var i = 0; i < ACTIVIDADES.length; i++) {
     var act = ACTIVIDADES[i];
     var isAct = s.actividades.indexOf(act) > -1;
+    var isOtro = act === "Otro (especificar)";
     actHtml += '<div class="act-item'+(isAct?" active":"")+'" onclick="toggleAct('+i+')">'
-      +'<input type="checkbox"'+(isAct?" checked":"")+'style="width:14px;height:14px;flex-shrink:0">'
+      +'<input type="checkbox"'+(isAct?" checked":"")+' style="width:16px;height:16px;flex-shrink:0;accent-color:#1a73e8" onclick="toggleAct('+i+');event.stopPropagation()">'
       +'<span>'+act+'</span></div>';
+    if (isOtro && isAct) {
+      actHtml += '<div class="act-otro" style="grid-column:1/-1">'
+        +'<input type="text" placeholder="Especifica el trabajo realizado..." value="'+(s.actOtro||"")+'" onchange="updateActOtro(this.value)">'
+        +'</div>';
+    }
   }
+
+  // Filas intervenciones
   var filasHtml = "";
   for (var fi = 0; fi < s.filas.length; fi++) {
     var f = s.filas[fi];
@@ -182,7 +208,7 @@ function renderDatos(s) {
     filasHtml += '<tr>'
       +'<td style="text-align:center;color:#888;font-size:11px;vertical-align:middle">'+(fi+1)+'</td>'
       +'<td><select onchange="updateFila('+fi+',\'pabellon\',this.value)">'+pabOpts+'</select></td>'
-      +'<td><select onchange="updateSL('+fi+',this.value)">'+slOpts+'</select></td>'
+      +'<td class="sl-cell"><select onchange="updateSL('+fi+',this.value)" style="min-width:80px">'+slOpts+'</select></td>'
       +celdasCell
       +'<td><select onchange="updateFila('+fi+',\'accion\',this.value)">'+accOpts+'</select></td>'
       +repuestoCell
@@ -190,6 +216,19 @@ function renderDatos(s) {
       +'<td style="text-align:center;vertical-align:middle">'+delBtn+'</td>'
       +'</tr>';
   }
+
+  // Estado del sector
+  var estadoHtml = "";
+  for (var i = 0; i < ESTADOS.length; i++) {
+    var est = ESTADOS[i];
+    var isEst = s.estados && s.estados.indexOf(est.label) > -1;
+    estadoHtml += '<div class="estado-item'+(isEst?" active":"")+'" onclick="toggleEstado('+i+')">'
+      +'<input type="checkbox"'+(isEst?" checked":"")+' style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#1a73e8" onclick="toggleEstado('+i+');event.stopPropagation()">'
+      +'<div><div class="estado-label">'+est.label+'</div>'
+      +(est.sub?'<div class="estado-sub">'+est.sub+'</div>':'')
+      +'</div></div>';
+  }
+
   return '<div class="card">'
     +'<div class="card-header blue">DATOS DEL SECTOR</div>'
     +'<div class="datos-grid">'
@@ -197,13 +236,15 @@ function renderDatos(s) {
     +'<div class="dato-cell"><div class="dato-label">Sector</div><select class="dato-input" onchange="updateSector(\'sector\',this.value)">'+sectOpts+'</select></div>'
     +'<div class="dato-cell"><div class="dato-label">N° IO</div><input class="dato-input" value="'+s.io+'" onchange="updateSector(\'io\',this.value)" placeholder="Ej: 81292"></div>'
     +'</div></div>'
-    +'<div class="card"><div class="card-header blue">ACTIVIDADES — '+s.actividades.length+' seleccionadas</div>'
+    +'<div class="card"><div class="card-header blue">TRABAJOS REALIZADOS — '+s.actividades.length+' seleccionados</div>'
     +'<div class="act-grid">'+actHtml+'</div></div>'
     +'<div class="card"><div class="card-header blue">INTERVENCIONES</div>'
     +'<div style="overflow-x:auto"><table><thead><tr>'
     +'<th>#</th><th>Pabellón</th><th>S/L</th><th>Celda(s)</th><th>Acción</th><th>Repuesto</th><th>Cant.</th><th></th>'
     +'</tr></thead><tbody>'+filasHtml+'</tbody></table></div>'
     +'<button class="add-fila" onclick="addFila()">+ Agregar fila</button></div>'
+    +'<div class="card"><div class="card-header blue">ESTADO DEL SECTOR</div>'
+    +'<div class="estado-grid">'+estadoHtml+'</div></div>'
     +'<div class="card"><div class="card-header gray">📝 OBSERVACIONES</div>'
     +'<textarea placeholder="Información relevante del sector..." onchange="updateSector(\'observaciones\',this.value)">'+s.observaciones+'</textarea></div>'
     +(sectores.length>1 ? '<button class="btn btn-red" onclick="confirmarEliminar('+activeSector+')">🗑 Eliminar este sector</button>' : '');
@@ -232,29 +273,31 @@ function switchTab(tab) {
 }
 
 function switchSector(i) { activeSector=i; currentTab="datos"; render(); }
-function addSector() { sectores.push(emptySector()); activeSector=sectores.length-1; currentTab="datos"; render(); }
-function updateSector(field,val) { sectores[activeSector][field]=val; renderTabs(); }
-function updateFila(fi,field,val) { sectores[activeSector].filas[fi][field]=val; }
-function addFila() { sectores[activeSector].filas.push(emptyFila()); renderContent(); }
-function removeFila(fi) { sectores[activeSector].filas.splice(fi,1); renderContent(); }
+function addSector() { sectores.push(emptySector()); activeSector=sectores.length-1; currentTab="datos"; render(); guardarEstado(); }
+function updateSector(field,val) { sectores[activeSector][field]=val; renderTabs(); guardarEstado(); }
+function updateFila(fi,field,val) { sectores[activeSector].filas[fi][field]=val; guardarEstado(); }
+function addFila() { sectores[activeSector].filas.push(emptyFila()); renderContent(); guardarEstado(); }
+function removeFila(fi) { sectores[activeSector].filas.splice(fi,1); renderContent(); guardarEstado(); }
+function updateActOtro(val) { sectores[activeSector].actOtro=val; guardarEstado(); }
 
 function updateSL(fi,val) {
   sectores[activeSector].filas[fi].sl=val;
   sectores[activeSector].filas[fi].celdas="";
   sectores[activeSector].filas[fi].cantidad=val.indexOf("Lado")===0?"1":"";
-  renderContent();
+  renderContent(); guardarEstado();
 }
 
 function updateCeldas(fi,val) {
   sectores[activeSector].filas[fi].celdas=val;
   var n=val.split(/[\s,\-\.]+/).filter(function(x){return x.trim()!=="";});
   sectores[activeSector].filas[fi].cantidad=n.length>0?String(n.length):"";
+  guardarEstado();
 }
 
 function updateRepuesto(fi,val) {
   sectores[activeSector].filas[fi].repuesto=val;
   if (val!=="Otro (escribir)") sectores[activeSector].filas[fi].repuestoOtro="";
-  renderContent();
+  renderContent(); guardarEstado();
 }
 
 function toggleAct(i) {
@@ -263,7 +306,17 @@ function toggleAct(i) {
   var idx=s.actividades.indexOf(act);
   if (idx>-1) s.actividades.splice(idx,1);
   else s.actividades.push(act);
-  renderContent();
+  renderContent(); guardarEstado();
+}
+
+function toggleEstado(i) {
+  var s=sectores[activeSector];
+  if (!s.estados) s.estados=[];
+  var label=ESTADOS[i].label;
+  var idx=s.estados.indexOf(label);
+  if (idx>-1) s.estados.splice(idx,1);
+  else s.estados.push(label);
+  renderContent(); guardarEstado();
 }
 
 function getRepuestoFinal(f) {
@@ -274,10 +327,23 @@ function generarResumenSector(s) {
   if (!s.sector||!s.io) return null;
   var txt="────────────────────────────────\n";
   txt+="Fecha: "+s.fecha+"\nSector: "+s.sector+"\nIO: "+s.io+"\n";
-  if (s.actividades.length) {
-    txt+="\n✅ Actividades:\n";
-    for (var i=0;i<s.actividades.length;i++) txt+="  • "+s.actividades[i]+"\n";
+
+  // Estado del sector
+  if (s.estados&&s.estados.length) {
+    txt+="\n📋 Estado del sector:\n";
+    for (var i=0;i<s.estados.length;i++) txt+="  • "+s.estados[i]+"\n";
   }
+
+  // Trabajos realizados
+  if (s.actividades.length) {
+    txt+="\n✅ Trabajos realizados:\n";
+    for (var i=0;i<s.actividades.length;i++) {
+      var act=s.actividades[i];
+      if (act==="Otro (especificar)"&&s.actOtro) txt+="  • "+s.actOtro+"\n";
+      else if (act!=="Otro (especificar)") txt+="  • "+act+"\n";
+    }
+  }
+
   var rep=[],pen=[],cam=[];
   for (var i=0;i<s.filas.length;i++) {
     var f=s.filas[i];
@@ -315,6 +381,7 @@ function generarResumen() {
   for (var i=0;i<sectores.length;i++){var b=generarResumenSector(sectores[i]);if(b)txt+="\n"+b;}
   sectores[activeSector].resumenTxt=txt;
   sectores[activeSector].resumengenerado=true;
+  guardarEstado();
   switchTab("resumen");
   showMsg("✅ Resumen generado. Cópialo y luego envía a BD.");
 }
@@ -335,19 +402,19 @@ function enviarBD() {
     var f=s.filas[i];
     filas.push({pabellon:f.pabellon,sl:f.sl,celdas:f.celdas,accion:f.accion,repuesto:getRepuestoFinal(f),cantidad:f.cantidad});
   }
-  var datos={fecha:s.fecha,sector:s.sector,io:s.io,actividades:s.actividades,observaciones:s.observaciones,filas:filas};
+  var datos={fecha:s.fecha,sector:s.sector,io:s.io,actividades:s.actividades,actOtro:s.actOtro,estados:s.estados,observaciones:s.observaciones,filas:filas};
   fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(datos)
-  }).then(function() {
+    method:"POST", mode:"no-cors",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(datos)
+  }).then(function(){
     var idBase="M1-"+s.fecha.replace(/-/g,"");
     sectores[activeSector].enviado=true;
     sectores[activeSector].idBase=idBase;
+    guardarEstado();
     showMsg("✅ Datos enviados correctamente.");
     render();
-  }).catch(function(err){
+  }).catch(function(){
     showMsg("❌ Error de conexión. Reintenta cuando haya internet.",false);
   });
 }
@@ -356,7 +423,7 @@ function limpiarHoja() {
   var sector=sectores[activeSector].sector;
   sectores[activeSector]=emptySector();
   sectores[activeSector].sector=sector;
-  currentTab="datos"; render();
+  currentTab="datos"; render(); guardarEstado();
   showMsg("✅ Hoja limpia para nuevo reporte.");
 }
 
@@ -373,7 +440,7 @@ function closeModal(){ document.getElementById("overlay").style.display="none"; 
 function doDelete(){
   sectores.splice(confirmDeleteIdx,1);
   activeSector=Math.max(0,confirmDeleteIdx-1);
-  closeModal(); render();
+  closeModal(); guardarEstado(); render();
 }
 
 function showMsg(txt,ok){
@@ -384,48 +451,28 @@ function showMsg(txt,ok){
   setTimeout(function(){el.style.display="none";},3500);
 }
 
-// ── LocalStorage ──────────────────────────────
 function guardarEstado() {
   try {
     localStorage.setItem("reporte_pesaje_m1", JSON.stringify({
-      sectores: sectores,
-      activeSector: activeSector,
-      currentTab: currentTab
+      sectores:sectores, activeSector:activeSector, currentTab:currentTab
     }));
   } catch(e) {}
 }
 
 function cargarEstado() {
   try {
-    var data = localStorage.getItem("reporte_pesaje_m1");
+    var data=localStorage.getItem("reporte_pesaje_m1");
     if (data) {
-      var estado = JSON.parse(data);
-      if (estado.sectores && estado.sectores.length > 0) {
-        sectores = estado.sectores;
-        activeSector = estado.activeSector || 0;
-        currentTab = estado.currentTab || "datos";
+      var estado=JSON.parse(data);
+      if (estado.sectores&&estado.sectores.length>0) {
+        sectores=estado.sectores;
+        activeSector=estado.activeSector||0;
+        currentTab=estado.currentTab||"datos";
       }
     }
   } catch(e) {}
 }
 
-// Guardar en cada acción
-var _updateSector = updateSector;
-updateSector = function(field, val) { _updateSector(field, val); guardarEstado(); };
-var _updateFila = updateFila;
-updateFila = function(fi, field, val) { _updateFila(fi, field, val); guardarEstado(); };
-var _addFila = addFila;
-addFila = function() { _addFila(); guardarEstado(); };
-var _removeFila = removeFila;
-removeFila = function(fi) { _removeFila(fi); guardarEstado(); };
-var _addSector = addSector;
-addSector = function() { _addSector(); guardarEstado(); };
-var _toggleAct = toggleAct;
-toggleAct = function(i) { _toggleAct(i); guardarEstado(); };
-var _limpiarHoja = limpiarHoja;
-limpiarHoja = function() { _limpiarHoja(); guardarEstado(); };
-
-// Service Worker para PWA offline
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
 }
