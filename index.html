@@ -451,9 +451,12 @@ function showMsg(txt,ok){
   setTimeout(function(){el.style.display="none";},3500);
 }
 
+var APP_VERSION = "2.0";
+
 function guardarEstado() {
   try {
     localStorage.setItem("reporte_pesaje_m1", JSON.stringify({
+      version: APP_VERSION,
       sectores:sectores, activeSector:activeSector, currentTab:currentTab
     }));
   } catch(e) {}
@@ -464,6 +467,10 @@ function cargarEstado() {
     var data=localStorage.getItem("reporte_pesaje_m1");
     if (data) {
       var estado=JSON.parse(data);
+      if (estado.version !== APP_VERSION) {
+        localStorage.removeItem("reporte_pesaje_m1");
+        return;
+      }
       if (estado.sectores&&estado.sectores.length>0) {
         sectores=estado.sectores;
         activeSector=estado.activeSector||0;
