@@ -451,7 +451,7 @@ function showMsg(txt,ok){
   setTimeout(function(){el.style.display="none";},3500);
 }
 
-var APP_VERSION = "2.0";
+var APP_VERSION = "3.0";
 
 function guardarEstado() {
   try {
@@ -467,8 +467,11 @@ function cargarEstado() {
     var data=localStorage.getItem("reporte_pesaje_m1");
     if (data) {
       var estado=JSON.parse(data);
-      if (estado.version !== APP_VERSION) {
+      if (!estado.version || estado.version !== APP_VERSION) {
         localStorage.removeItem("reporte_pesaje_m1");
+        sectores=[emptySector()];
+        activeSector=0;
+        currentTab="datos";
         return;
       }
       if (estado.sectores&&estado.sectores.length>0) {
@@ -477,7 +480,9 @@ function cargarEstado() {
         currentTab=estado.currentTab||"datos";
       }
     }
-  } catch(e) {}
+  } catch(e) {
+    localStorage.removeItem("reporte_pesaje_m1");
+  }
 }
 
 if ('serviceWorker' in navigator) {
