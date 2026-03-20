@@ -42,12 +42,13 @@ body { font-family: Arial, sans-serif; background: #f0f0f0; width: 100%; max-wid
 .act-item input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: #1a73e8; }
 .act-otro { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; background: #fffde7; }
 .act-otro input { width: 100%; border: none; border-bottom: 1px solid #ccc; background: transparent; font-size: 13px; padding: 4px 0; outline: none; }
-.estado-grid { display: flex; flex-direction: column; }
-.estado-item { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.estado-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.estado-item { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 8px; cursor: pointer; }
 .estado-item.active { background: #e8f0fe; }
-.estado-item input[type=checkbox] { width: 18px; height: 18px; margin-top: 2px; flex-shrink: 0; accent-color: #1a73e8; cursor: pointer; }
-.estado-label { font-size: 13px; font-weight: bold; color: #333; }
-.estado-sub { font-size: 11px; color: #888; margin-top: 2px; }
+.estado-item input[type=checkbox] { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; accent-color: #1a73e8; cursor: pointer; }
+.estado-label { font-size: 13px; color: #333; }
+.estado-otro { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; background: #fffde7; grid-column: 1 / -1; }
+.estado-otro input { width: 100%; border: none; border-bottom: 1px solid #ccc; background: transparent; font-size: 13px; padding: 4px 0; outline: none; }
 table { width: 100%; border-collapse: collapse; font-size: 14px; }
 th { background: #1a73e8; color: #fff; font-weight: bold; font-size: 12px; padding: 8px; border: 1px solid #1558b0; text-align: center; white-space: nowrap; }
 td { padding: 6px; border: 1px solid #d0d7de; min-height: 32px; background: #fff; vertical-align: top; }
@@ -56,7 +57,7 @@ td.locked { background: #f1f3f4; color: #bbb; text-align: center; vertical-align
 td.active-cell { background: #e8f0fe; border-color: #1a73e8; }
 td select, td input[type=text], td input[type=number] { width: 100%; border: none; background: transparent; font-size: 13px; padding: 0; outline: none; }
 td input.otro-input { width: 100%; border: none; border-top: 1px dashed #ccc; background: #fffde7; font-size: 13px; padding: 2px 0; outline: none; margin-top: 3px; display: block; }
-.sl-cell { min-width: 90px; }
+.sl-cell { min-width: 45px; max-width: 45px; }
 .add-fila { font-size: 12px; color: #1a73e8; background: none; border: none; cursor: pointer; padding: 6px 8px; }
 textarea { width: 100%; border: none; font-size: 12px; padding: 8px; resize: vertical; outline: none; min-height: 60px; font-family: Arial, sans-serif; }
 .btn { width: 100%; padding: 12px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; margin-bottom: 8px; }
@@ -124,8 +125,10 @@ var REPUESTOS = ["Celda de Carga 3TON","Celda Tipo S 20Kg","Caja Electrónica Si
 var ESTADOS = [
   {label:"Sector operativo", sub:""},
   {label:"Informe retirado", sub:""},
-  {label:"Pendiente retiro de informe", sub:""},
-  {label:"Pendiente por desabastecimiento", sub:"Intervención en espera de reposición de stock"}
+  {label:"Retiro de informe pendiente", sub:""},
+  {label:"Pendientes en espera de reposición de stock", sub:""},
+  {label:"Trabajos entregados conforme", sub:""},
+  {label:"Otro (especificar)", sub:""}
 ];
 
 function todayStr() {
@@ -133,7 +136,7 @@ function todayStr() {
   return String(d.getDate()).padStart(2,"0")+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+d.getFullYear();
 }
 function emptyFila() { return {pabellon:"",sl:"",celdas:"",accion:"",repuesto:"",repuestoOtro:"",cantidad:""}; }
-function emptySector() { return {sector:"",io:"",fecha:todayStr(),filas:[emptyFila()],actividades:[],actOtro:"",estados:[],observaciones:"",enviado:false,resumengenerado:false,idBase:"",resumenTxt:""}; }
+function emptySector() { return {sector:"",io:"",fecha:todayStr(),filas:[emptyFila()],actividades:[],actOtro:"",estados:[],estadoOtro:"",observaciones:"",enviado:false,resumengenerado:false,idBase:"",resumenTxt:""}; }
 
 var sectores = [emptySector()];
 var activeSector = 0;
@@ -206,7 +209,6 @@ function renderDatos(s) {
     var delBtn = s.filas.length > 1
       ? '<button onclick="removeFila('+fi+')" style="background:none;border:none;color:#e53935;cursor:pointer;font-size:14px">✕</button>' : "";
     filasHtml += '<tr>'
-      +'<td style="text-align:center;color:#888;font-size:11px;vertical-align:middle">'+(fi+1)+'</td>'
       +'<td><select onchange="updateFila('+fi+',\'pabellon\',this.value)">'+pabOpts+'</select></td>'
       +'<td class="sl-cell"><select onchange="updateSL('+fi+',this.value)" style="min-width:80px">'+slOpts+'</select></td>'
       +celdasCell
@@ -222,11 +224,15 @@ function renderDatos(s) {
   for (var i = 0; i < ESTADOS.length; i++) {
     var est = ESTADOS[i];
     var isEst = s.estados && s.estados.indexOf(est.label) > -1;
+    var isOtro = est.label === "Otro (especificar)";
     estadoHtml += '<div class="estado-item'+(isEst?" active":"")+'" onclick="toggleEstado('+i+')">'
-      +'<input type="checkbox"'+(isEst?" checked":"")+' style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#1a73e8" onclick="toggleEstado('+i+');event.stopPropagation()">'
-      +'<div><div class="estado-label">'+est.label+'</div>'
-      +(est.sub?'<div class="estado-sub">'+est.sub+'</div>':'')
-      +'</div></div>';
+      +'<input type="checkbox"'+(isEst?" checked":"")+' style="width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#1a73e8" onclick="toggleEstado('+i+');event.stopPropagation()">'
+      +'<div><div class="estado-label">'+est.label+'</div></div></div>';
+    if (isOtro && isEst) {
+      estadoHtml += '<div class="estado-otro">'
+        +'<input type="text" placeholder="Especifica..." value="'+(s.estadoOtro||"")+'" onchange="updateEstadoOtro(this.value)">'
+        +'</div>';
+    }
   }
 
   return '<div class="card">'
@@ -240,7 +246,7 @@ function renderDatos(s) {
     +'<div class="act-grid">'+actHtml+'</div></div>'
     +'<div class="card"><div class="card-header blue">INTERVENCIONES</div>'
     +'<div style="overflow-x:auto"><table><thead><tr>'
-    +'<th>#</th><th>Pabellón</th><th>S/L</th><th>Celda(s)</th><th>Acción</th><th>Repuesto</th><th>Cant.</th><th></th>'
+    +'<th>Pabellón</th><th>S/L</th><th>Celda(s)</th><th>Acción</th><th>Repuesto</th><th>Cant.</th><th></th>'
     +'</tr></thead><tbody>'+filasHtml+'</tbody></table></div>'
     +'<button class="add-fila" onclick="addFila()">+ Agregar fila</button></div>'
     +'<div class="card"><div class="card-header blue">ESTADO DEL SECTOR</div>'
@@ -279,6 +285,7 @@ function updateFila(fi,field,val) { sectores[activeSector].filas[fi][field]=val;
 function addFila() { sectores[activeSector].filas.push(emptyFila()); renderContent(); guardarEstado(); }
 function removeFila(fi) { sectores[activeSector].filas.splice(fi,1); renderContent(); guardarEstado(); }
 function updateActOtro(val) { sectores[activeSector].actOtro=val; guardarEstado(); }
+function updateEstadoOtro(val) { sectores[activeSector].estadoOtro=val; guardarEstado(); }
 
 function updateSL(fi,val) {
   sectores[activeSector].filas[fi].sl=val;
@@ -370,6 +377,14 @@ function generarResumenSector(s) {
     if (resArr.length) txt+="\n📦 Resumen cambios:\n"+resArr.join("\n")+"\n";
   }
   if (s.observaciones&&s.observaciones.trim()) txt+="\n📝 Observaciones: "+s.observaciones.trim()+"\n";
+  if (s.estados&&s.estados.length) {
+    txt+="\n📋 Notas de sector:\n";
+    for (var i=0;i<s.estados.length;i++) {
+      var est=s.estados[i];
+      if (est==="Otro (especificar)"&&s.estadoOtro) txt+="  • "+s.estadoOtro+"\n";
+      else if (est!=="Otro (especificar)") txt+="  • "+est+"\n";
+    }
+  }
   return txt;
 }
 
@@ -451,7 +466,7 @@ function showMsg(txt,ok){
   setTimeout(function(){el.style.display="none";},3500);
 }
 
-var APP_VERSION = "3.0";
+var APP_VERSION = "4.0";
 
 function guardarEstado() {
   try {
