@@ -1,4 +1,4 @@
-var CACHE = "reporte-pesaje-v1";
+var CACHE = "reporte-pesaje-v2";
 var FILES = ["https://patricioivm.github.io/reporte-pesaje/", "https://patricioivm.github.io/reporte-pesaje/index.html", "https://patricioivm.github.io/reporte-pesaje/manifest.json"];
 
 self.addEventListener("install", function(e) {
