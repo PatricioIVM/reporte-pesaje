@@ -12,7 +12,7 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
-body { font-family: Arial, sans-serif; background: #f0f0f0; width: 100%; max-width: 600px; margin: 0 auto; font-size: 18px; }
+body { font-family: Arial, sans-serif; background: #f0f0f0; width: 100%; max-width: 600px; margin: 0 auto; font-size: 16px; }
 .header { background: #1a73e8; padding: 12px 14px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 20; }
 .header-title { font-size: 17px; font-weight: bold; color: #fff; }
 .header-sub { font-size: 12px; color: rgba(255,255,255,0.8); }
@@ -334,12 +334,6 @@ function generarResumenSector(s) {
   if (!s.sector||!s.io) return null;
   var txt="────────────────────────────────\n";
   txt+="Fecha: "+s.fecha+"\nSector: "+s.sector+"\nIO: "+s.io+"\n";
-
-  // Estado del sector
-  if (s.estados&&s.estados.length) {
-    txt+="\n📋 Estado del sector:\n";
-    for (var i=0;i<s.estados.length;i++) txt+="  • "+s.estados[i]+"\n";
-  }
 
   // Trabajos realizados
   if (s.actividades.length) {
