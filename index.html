@@ -1,1052 +1,505 @@
-"""
-SCRIPT: Reporte Consolidado Diario
-=================================================
-Combina los tres reportes:
-  1. Peso Silos
-  2. Peso Pollos
-  3. Flujometros Pollos
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a73e8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Reporte Pesaje">
+<link rel="manifest" href="manifest.json">
+<title>Reporte Pesaje</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { font-family: Arial, sans-serif; background: #f0f0f0; width: 100%; max-width: 600px; margin: 0 auto; font-size: 16px; }
+.header { background: #1a73e8; padding: 12px 14px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 20; }
+.header-title { font-size: 17px; font-weight: bold; color: #fff; }
+.header-sub { font-size: 12px; color: rgba(255,255,255,0.8); }
+.sector-tabs { background: #fff; border-bottom: 2px solid #e0e0e0; display: flex; align-items: flex-end; padding-left: 8px; gap: 2px; overflow-x: auto; position: sticky; top: 52px; z-index: 19; }
+.sector-tab { padding: 6px 12px; font-size: 12px; cursor: pointer; border-radius: 4px 4px 0 0; border: 1px solid #e0e0e0; border-bottom: none; white-space: nowrap; background: #f1f3f4; color: #555; }
+.sector-tab.active { background: #fff; color: #1a73e8; font-weight: bold; margin-bottom: -2px; }
+.add-sector { padding: 6px 10px; font-size: 18px; cursor: pointer; color: #1a73e8; border: none; background: none; }
+.sub-tabs { background: #fff; border-bottom: 1px solid #e0e0e0; display: flex; position: sticky; top: 90px; z-index: 18; }
+.sub-tab { flex: 1; border: none; border-bottom: 2px solid transparent; background: none; font-size: 12px; color: #888; padding: 8px 0; cursor: pointer; }
+.sub-tab.active { color: #1a73e8; font-weight: bold; border-bottom-color: #1a73e8; }
+.msg { padding: 8px 12px; font-size: 12px; font-weight: bold; border-bottom: 1px solid #e0e0e0; }
+.msg.ok { background: #e6f4ea; color: #1e7e34; }
+.msg.err { background: #fce8e6; color: #c62828; }
+.content { padding: 8px; padding-bottom: 70px; }
+.card { background: #fff; border: 1px solid #d0d7de; border-radius: 4px; margin-bottom: 8px; overflow: hidden; }
+.card-header { color: #fff; font-size: 11px; font-weight: bold; padding: 4px 8px; }
+.card-header.blue { background: #1a73e8; }
+.card-header.green { background: #25D366; display: flex; justify-content: space-between; align-items: center; }
+.card-header.gray { background: #f1f3f4; color: #555; border-bottom: 1px solid #d0d7de; }
+.datos-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+.dato-cell { border-right: 1px solid #d0d7de; padding: 6px; }
+.dato-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+.dato-input { width: 100%; border: none; background: transparent; font-size: 12px; padding: 0; outline: none; }
+.act-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.act-item { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.act-item.active { background: #e8f0fe; color: #1a73e8; }
+.act-item input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; accent-color: #1a73e8; }
+.act-otro { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; background: #fffde7; }
+.act-otro input { width: 100%; border: none; border-bottom: 1px solid #ccc; background: transparent; font-size: 13px; padding: 4px 0; outline: none; }
+.estado-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.estado-item { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: flex-start; gap: 8px; cursor: pointer; }
+.estado-item.active { background: #e8f0fe; }
+.estado-item input[type=checkbox] { width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0; accent-color: #1a73e8; cursor: pointer; }
+.estado-label { font-size: 13px; color: #333; }
+.estado-otro { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; background: #fffde7; grid-column: 1 / -1; }
+.estado-otro input { width: 100%; border: none; border-bottom: 1px solid #ccc; background: transparent; font-size: 13px; padding: 4px 0; outline: none; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { background: #1a73e8; color: #fff; font-weight: bold; font-size: 12px; padding: 8px; border: 1px solid #1558b0; text-align: center; white-space: nowrap; }
+td { padding: 6px; border: 1px solid #d0d7de; min-height: 32px; background: #fff; vertical-align: top; }
+tr:nth-child(even) td { background: #f8f9fa; }
+td.locked { background: #f1f3f4; color: #bbb; text-align: center; vertical-align: middle; }
+td.active-cell { background: #e8f0fe; border-color: #1a73e8; }
+td select, td input[type=text], td input[type=number] { width: 100%; border: none; background: transparent; font-size: 13px; padding: 0; outline: none; }
+td input.otro-input { width: 100%; border: none; border-top: 1px dashed #ccc; background: #fffde7; font-size: 13px; padding: 2px 0; outline: none; margin-top: 3px; display: block; }
+.sl-cell { min-width: 45px; max-width: 45px; }
+.add-fila { font-size: 12px; color: #1a73e8; background: none; border: none; cursor: pointer; padding: 6px 8px; }
+textarea { width: 100%; border: none; font-size: 12px; padding: 8px; resize: vertical; outline: none; min-height: 60px; font-family: Arial, sans-serif; }
+.btn { width: 100%; padding: 12px; border-radius: 6px; border: none; font-size: 13px; font-weight: bold; cursor: pointer; margin-bottom: 8px; }
+.btn-blue { background: #1a73e8; color: #fff; }
+.btn-green { background: #34a853; color: #fff; }
+.btn-gray { background: #f1f3f4; color: #555; }
+.btn-red { background: #fff; border: 1px solid #e53935 !important; color: #e53935; }
+.enviado-badge { background: #e6f4ea; border: 1px solid #34a853; border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #1e7e34; margin-bottom: 8px; font-weight: bold; }
+pre { font-size: 12px; padding: 10px; white-space: pre-wrap; font-family: monospace; color: #333; background: #f9f9f9; min-height: 80px; }
+.copy-btn { font-size: 11px; padding: 2px 10px; border-radius: 4px; border: 1px solid #fff; background: transparent; color: #fff; cursor: pointer; }
+.bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 600px; background: #fff; border-top: 1px solid #e0e0e0; display: flex; padding: 6px 0; z-index: 10; }
+.nav-btn { flex: 1; border: none; background: none; font-size: 12px; color: #888; padding: 4px 0; cursor: pointer; }
+.nav-btn.active { color: #1a73e8; font-weight: bold; }
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 50; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.modal { background: #fff; border-radius: 8px; padding: 20px; width: 100%; max-width: 300px; }
+.modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.modal-btn { padding: 8px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+</style>
+</head>
+<body>
 
-Logicas especiales:
-  - Peso Silos: DonAmbrosio y Longovilo → ventana 2h, P1-P40, rango -300 a 9000
-  - Peso Pollos: DonAmbrosio → P1-P40, equipo nuevo (dia_crianza) y antiguo (valor1-20)
+<div class="header">
+  <div style="font-size:24px">📊</div>
+  <div>
+    <div class="header-title">Reporte Pesaje</div>
+    <div class="header-sub">Móvil 1 — Informe Sistemas de Pesaje</div>
+  </div>
+</div>
 
-Genera:
-  - Un solo correo con resumen de los 3 reportes
-  - Excel adjunto con 6 hojas
-  - Actualiza Google Sheets con historial de operatividad
-  - Actualiza historial/operatividad.csv en GitHub
-"""
+<div class="sector-tabs" id="sectorTabs"></div>
 
-import requests
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email.mime.text import MIMEText
-from email import encoders
-import pandas as pd
-from datetime import datetime
-import urllib3
-import sys
-import os
-import re
-import json
-import csv
-from collections import defaultdict
+<div class="sub-tabs">
+  <button class="sub-tab active" id="tabDatos" onclick="switchTab('datos')">📋 Datos</button>
+  <button class="sub-tab" id="tabResumen" onclick="switchTab('resumen')">📤 WhatsApp</button>
+</div>
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+<div id="msgBar" style="display:none" class="msg"></div>
+<div class="content" id="mainContent"></div>
 
-# ============================================================
-# CONFIGURACION
-# ============================================================
-USUARIO    = "psotoing"
-CONTRASENA = "psotoing"
+<div class="bottom-nav">
+  <button class="nav-btn active" id="navDatos" onclick="switchTab('datos')">📋 Datos</button>
+  <button class="nav-btn" id="navResumen" onclick="switchTab('resumen')">📤 WhatsApp</button>
+</div>
 
-GRAFANA_URL          = "https://dash.tecnoandina.cl"
-ORG_ID               = 8
-DATASOURCE_UID       = "bevlbss9t97nkf"
-DATASOURCE_UID_PATAS = "aevlapmkso934b"
+<div id="overlay" class="overlay" style="display:none">
+  <div class="modal">
+    <div style="font-weight:bold;margin-bottom:8px">🗑 Eliminar sector</div>
+    <p id="modalMsg" style="font-size:13px;color:#555"></p>
+    <div class="modal-btns">
+      <button class="modal-btn" style="border:1px solid #ccc;background:#fff" onclick="closeModal()">Cancelar</button>
+      <button class="modal-btn" style="border:none;background:#e53935;color:#fff" onclick="doDelete()">Sí, eliminar</button>
+    </div>
+  </div>
+</div>
 
-BUCKET_SILOS         = "agrosuper_aves"
-BUCKET_FLUJOMETROS   = "medioambiente"
-MEASUREMENT_SILOS    = "agrosuper_silos12"
-MEASUREMENT_POLLOS   = "pesaje_animal"
-MEASUREMENT_FLUJO    = "catalogo_agua"
-APP_FLUJOMETROS      = "flujometro-pollos"
+<script>
+var APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz7mB9cTJQfJ7jNAOdi398vT-ejUVdhGZXq_GO0YSVaay5B8mz9Fh6sZ5-_xFj5TU8LQw/exec";
 
-# Ventanas de revision
-HORAS_SILOS           = 6
-HORAS_SILOS_ESPECIAL  = 2    # DonAmbrosio y Longovilo
-HORAS_POLLOS          = 24
-HORAS_FLUJOMETROS     = 48
+var SECTORES = ["Las Murallas","Don Lalo","Don Tito","Don Ambrosio","Don Cornelio","Don Gastón","Don Wilson","Las Diucas","Los Pinos","Los Loros","Las Vegas","Matanza","Valdebenito","Alhue","Don Forster","Loica","Doña Ema","El Tucán","Don Rica","Las Cornizas","Longovilo","Santa Rosa","Dusset","Los Culenes","El Diputado","La Liguana","La Fiera","Demetrio","El Galeón","Casablanca","La Libreta","Don Feña"];
+var PABELLONES = ["1","2","3","4","5","6","7","8A","8B","9","10","11","12","13","14","15","16","17","18","19","20"];
+var SL = ["Silo 1","Silo 2","Silo 3","Silo 4","Lado A","Lado B"];
+var ACCIONES = ["Reparado","Pendiente","Cambiado"];
+var ACTIVIDADES = ["Revisión silos","Revisión flujómetros","Revisión pesaje pollos","Cambio caja electrónica","Cambio celda carga","Revisión sensores","Limpieza equipos","Calibración","Revisión cableado","Otro (especificar)"];
+var REPUESTOS = ["Celda de Carga 3TON","Celda Tipo S 20Kg","Caja Electrónica Silo","Caja Electrónica Aves","Display LED","Display LCD","Fuente 24V","Fuente 12V","Tarjeta Sumadora","Tarjeta PCB","Tarjeta ESP","Kit Báscula","Sensor T°","Flujómetro","Cordón alimentación","Cadena","Mosquetón","Accesorios Kit Báscula","Otro (escribir)"];
+var ESTADOS = [
+  {label:"Sector operativo", sub:""},
+  {label:"Informe retirado", sub:""},
+  {label:"Retiro de informe pendiente", sub:""},
+  {label:"Pendientes en espera de reposición de stock", sub:""},
+  {label:"Trabajos entregados conforme", sub:""},
+  {label:"Otro (especificar)", sub:""}
+];
 
-# Criterios peso pollos
-DIA_CRIANZA_MIN = 0
-DIA_CRIANZA_MAX = 44
-PESO_CELDA_MIN  = 4000
-PESO_CELDA_MAX  = 20000
+function todayStr() {
+  var d = new Date();
+  return String(d.getDate()).padStart(2,"0")+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+d.getFullYear();
+}
+function emptyFila() { return {pabellon:"",sl:"",celdas:"",accion:"",repuesto:"",repuestoOtro:"",cantidad:""}; }
+function emptySector() { return {sector:"",io:"",fecha:todayStr(),filas:[emptyFila()],actividades:[],actOtro:"",estados:[],estadoOtro:"",observaciones:"",enviado:false,resumengenerado:false,idBase:"",resumenTxt:""}; }
 
-# Criterios silos especiales
-SILO_RANGO_MIN_ESPECIAL = -300
-SILO_RANGO_MAX_ESPECIAL = 9000
+var sectores = [emptySector()];
+var activeSector = 0;
+var currentTab = "datos";
+var confirmDeleteIdx = null;
 
-# Sectores con logica especial
-SECTORES_SILOS_ESPECIAL  = {"DonAmbrosio", "Longovilo"}
-SECTOR_POLLOS_ESPECIAL   = "DonAmbrosio"
-PABELLONES_FIJOS         = [str(i) for i in range(1, 41)]  # P1 a P40
+function render() { renderTabs(); renderContent(); }
 
-META_OPERATIVIDAD = 95.0
-HISTORIAL_PATH    = "historial/operatividad.csv"
+function renderTabs() {
+  var html = "";
+  for (var i = 0; i < sectores.length; i++) {
+    var s = sectores[i];
+    html += '<div class="sector-tab '+(i===activeSector?"active":"")+'" onclick="switchSector('+i+')">'+(s.enviado?"✅ ":"")+(s.sector||"Sector "+(i+1))+'</div>';
+  }
+  html += '<button class="add-sector" onclick="addSector()">＋</button>';
+  document.getElementById("sectorTabs").innerHTML = html;
+}
 
-SECTORES = [
-    "Las Murallas 1", "Don Lalo", "Don Tito", "DonAmbrosio",
-    "Don Cornelio", "Don Gaston", "Don Wilson", "Las Diucas",
-    "Los Pinos", "Los Loros", "Las Vegas", "Matanza",
-    "Valdebenito", "Alhue", "Don Forster", "Loicas",
-    "Doña Ema", "El Tucan", "Don Rica", "Las Cornizas",
-    "Longovilo", "Santa Rosa", "Dusett", "Los Culenes",
-    "El Diputado", "La Liguana", "La Fiera", "Demetrio",
-    "El Galeon", "Casablanca", "La Libreta", "Don Feña"
-]
+function renderContent() {
+  var s = sectores[activeSector];
+  document.getElementById("mainContent").innerHTML = currentTab==="datos" ? renderDatos(s) : renderResumen(s);
+}
 
-# ============================================================
-# SESION
-# ============================================================
+function renderDatos(s) {
+  var sectOpts = '<option value="">— Elegir —</option>';
+  for (var i = 0; i < SECTORES.length; i++)
+    sectOpts += '<option'+(s.sector===SECTORES[i]?' selected':'')+'>'+SECTORES[i]+'</option>';
 
-def obtener_sesion():
-    session = requests.Session()
-    session.verify = False
-    session.auth = (USUARIO, CONTRASENA)
-    session.headers.update({
-        "Content-Type": "application/json",
-        "X-Grafana-Org-Id": str(ORG_ID)
-    })
-    resp = session.get(f"{GRAFANA_URL}/api/user", timeout=10)
-    if resp.status_code == 200:
-        print(f"  Sesion iniciada como: {resp.json().get('login', USUARIO)}")
-        return session
-    elif resp.status_code == 401:
-        print("  ERROR: Usuario o contrasena incorrectos.")
-        sys.exit(1)
-    else:
-        return session
-
-# ============================================================
-# CONSULTAS FLUX
-# ============================================================
-
-def consultar_influx(session, flux_query, horas=24, ds_uid=None):
-    uid = ds_uid or DATASOURCE_UID
-    payload = {
-        "queries": [{
-            "refId": "A",
-            "datasource": {"uid": uid, "type": "influxdb"},
-            "query": flux_query,
-            "maxDataPoints": 5000
-        }],
-        "from": f"now-{horas}h",
-        "to": "now"
+  // Actividades
+  var actHtml = "";
+  for (var i = 0; i < ACTIVIDADES.length; i++) {
+    var act = ACTIVIDADES[i];
+    var isAct = s.actividades.indexOf(act) > -1;
+    var isOtro = act === "Otro (especificar)";
+    actHtml += '<div class="act-item'+(isAct?" active":"")+'" onclick="toggleAct('+i+')">'
+      +'<input type="checkbox"'+(isAct?" checked":"")+' style="width:16px;height:16px;flex-shrink:0;accent-color:#1a73e8" onclick="toggleAct('+i+');event.stopPropagation()">'
+      +'<span>'+act+'</span></div>';
+    if (isOtro && isAct) {
+      actHtml += '<div class="act-otro" style="grid-column:1/-1">'
+        +'<input type="text" placeholder="Especifica el trabajo realizado..." value="'+(s.actOtro||"")+'" onchange="updateActOtro(this.value)">'
+        +'</div>';
     }
-    try:
-        resp = session.post(
-            f"{GRAFANA_URL}/api/ds/query?orgId={ORG_ID}",
-            json=payload, timeout=30
-        )
-        return resp.json() if resp.status_code == 200 else None
-    except Exception as e:
-        print(f"  Error conexion: {e}")
-        return None
-
-def extraer_ultimo_valor(resultado):
-    ultimo, ultimo_ts = None, None
-    if not resultado:
-        return None, None
-    for r in resultado.get("results", {}).values():
-        for frame in r.get("frames", []):
-            data = frame.get("data", {}).get("values", [])
-            if len(data) >= 2:
-                for ts, val in zip(data[0], data[1]):
-                    if val is not None:
-                        try:
-                            ultimo = float(val)
-                            ultimo_ts = ts
-                        except Exception:
-                            pass
-    return ultimo, ultimo_ts
-
-def extraer_todos_valores(resultado):
-    valores = []
-    if not resultado:
-        return valores
-    for r in resultado.get("results", {}).values():
-        for frame in r.get("frames", []):
-            vals = frame.get("data", {}).get("values", [])
-            if len(vals) >= 2:
-                for v in vals[1]:
-                    if v is not None:
-                        try:
-                            valores.append(float(v))
-                        except Exception:
-                            pass
-    return valores
-
-def ts_a_hora(ts_ms):
-    if ts_ms is None:
-        return ""
-    try:
-        return datetime.fromtimestamp(ts_ms / 1000).strftime("%d/%m/%Y %H:%M")
-    except Exception:
-        return ""
-
-def obtener_pabellones_sector(session, sector, bucket, measurement, app=None, dias=30):
-    pred = f'r["_measurement"] == "{measurement}" and r["sector"] == "{sector}"'
-    if app:
-        pred += f' and r["applicationName"] == "{app}"'
-    query = f"""
-import "influxdata/influxdb/v1"
-v1.tagValues(
-    bucket: "{bucket}",
-    tag: "pabellon",
-    predicate: (r) => {pred},
-    start: -{dias}d
-)
-"""
-    resultado = consultar_influx(session, query)
-    pabellones = []
-    if resultado:
-        for r in resultado.get("results", {}).values():
-            for frame in r.get("frames", []):
-                valores = frame.get("data", {}).get("values", [])
-                if valores:
-                    for v in valores[0]:
-                        if v and str(v).strip():
-                            pabellones.append(str(v).strip())
-
-    def sort_key(x):
-        partes = re.split(r'(\d+)', x)
-        return [int(p) if p.isdigit() else p.lower() for p in partes]
-
-    return sorted(pabellones, key=sort_key)
-
-# ============================================================
-# REPORTE 1: PESO SILOS
-# ============================================================
-
-def revisar_silos_normal(session, sector, pabellones):
-    """Logica estandar: pabellones desde InfluxDB, ventana 6h, sin rango."""
-    sin_datos = []
-    for pab in pabellones:
-        query = f"""
-from(bucket: "{BUCKET_SILOS}")
-  |> range(start: -{HORAS_SILOS}h)
-  |> filter(fn: (r) => r["_measurement"] == "{MEASUREMENT_SILOS}")
-  |> filter(fn: (r) => r["_field"] == "pesoSilo1" or r["_field"] == "pesoSilo2")
-  |> filter(fn: (r) => r["sector"] == "{sector}")
-  |> filter(fn: (r) => r["pabellon"] == "{pab}")
-  |> count()
-"""
-        resultado = consultar_influx(session, query, horas=HORAS_SILOS)
-        tiene = False
-        if resultado:
-            for r in resultado.get("results", {}).values():
-                for frame in r.get("frames", []):
-                    vals = frame.get("data", {}).get("values", [])
-                    if vals:
-                        for serie in vals:
-                            if any(v and int(v) > 0 for v in serie if v is not None):
-                                tiene = True
-        if not tiene:
-            sin_datos.append(pab)
-    return sin_datos
-
-
-def revisar_silos_especial(session, sector):
-    """Logica especial DonAmbrosio y Longovilo:
-       - Pabellones fijos P1-P40
-       - Ventana 2h
-       - Rango OK: -300 a 9000
-    """
-    sin_datos = []
-    for pab in PABELLONES_FIJOS:
-        query = f"""
-from(bucket: "{BUCKET_SILOS}")
-  |> range(start: -{HORAS_SILOS_ESPECIAL}h)
-  |> filter(fn: (r) => r["_measurement"] == "{MEASUREMENT_SILOS}")
-  |> filter(fn: (r) => r["_field"] == "pesoSilo1" or r["_field"] == "pesoSilo2")
-  |> filter(fn: (r) => r["sector"] == "{sector}")
-  |> filter(fn: (r) => r["pabellon"] == "{pab}")
-"""
-        resultado = consultar_influx(session, query, horas=HORAS_SILOS_ESPECIAL)
-        valores = extraer_todos_valores(resultado)
-
-        if not valores:
-            sin_datos.append(pab)
-        else:
-            valido = any(SILO_RANGO_MIN_ESPECIAL <= v <= SILO_RANGO_MAX_ESPECIAL for v in valores)
-            if not valido:
-                sin_datos.append(pab)
-
-    return sin_datos
-
-
-# ============================================================
-# VACIO OPERATIVO
-# ============================================================
-
-def detectar_vacios_operativos(det_pollos):
-    """
-    Sector en vacio operativo = todos sus pabellones con equipos nuevos
-    tienen dia_crianza > 44 (ciclo completado).
-    Solo considera equipos nuevos (con dato de dia_crianza).
-    """
-    dias_por_sector = defaultdict(list)
-    for fila in det_pollos:
-        dia = fila.get("Dia Crianza")
-        if dia != "" and isinstance(dia, (int, float)):
-            dias_por_sector[fila["Sector"]].append(int(dia))
-
-    sectores_vacios = set()
-    for sector, dias in dias_por_sector.items():
-        if dias and min(dias) > DIA_CRIANZA_MAX:
-            sectores_vacios.add(sector)
-
-    return sectores_vacios
-
-
-def revisar_silos(session, sectores_vacios=None):
-    if sectores_vacios is None:
-        sectores_vacios = set()
-    print("\n" + "=" * 60)
-    print("  REPORTE 1: PESO SILOS")
-    print("=" * 60)
-    resumen, detalle_patas = [], []
-
-    for i, sector in enumerate(SECTORES, 1):
-        print(f"[{i:2}/{len(SECTORES)}] {sector}...", end=" ", flush=True)
-        es_especial = sector in SECTORES_SILOS_ESPECIAL
-
-        if es_especial:
-            # Pabellones fijos P1-P40
-            pabellones = PABELLONES_FIJOS
-            sin_datos  = revisar_silos_especial(session, sector)
-        else:
-            pabellones = obtener_pabellones_sector(session, sector, BUCKET_SILOS, MEASUREMENT_SILOS)
-            if not pabellones:
-                print("  Sin pabellones")
-                resumen.append({"Sector": sector, "Pabellones sin datos": "", "Total Pabellones": 0})
-                continue
-            sin_datos = revisar_silos_normal(session, sector, pabellones)
-
-        lista_str = ", ".join([f"P{p}" for p in sin_datos]) if sin_datos else ""
-        print(f"  {len(sin_datos)} sin datos" if sin_datos else f"  OK ({len(pabellones)} pabellones)")
-
-        resumen.append({
-            "Sector":                sector,
-            "Pabellones sin datos":  lista_str,
-            "Total Pabellones":      len(pabellones)
-        })
-
-        # Revisar patas (todos los sectores)
-        for pab in pabellones:
-            patas_sin_datos = []
-            for num in range(1, 13):
-                campo = f"peso{num}"
-                hay_variacion = False
-                for fn in ["max", "min"]:
-                    query = f"""
-from(bucket: "{BUCKET_SILOS}")
-  |> range(start: -24h)
-  |> filter(fn: (r) => r["_measurement"] == "diagnostico_silos")
-  |> filter(fn: (r) => r["_field"] == "{campo}")
-  |> filter(fn: (r) => r["sector"] == "{sector}")
-  |> filter(fn: (r) => r["pabellon"] == "{pab}")
-  |> {fn}()
-"""
-                    res = consultar_influx(session, query, ds_uid=DATASOURCE_UID_PATAS)
-                    if res:
-                        for r in res.get("results", {}).values():
-                            for frame in r.get("frames", []):
-                                vals = frame.get("data", {}).get("values", [])
-                                if len(vals) >= 2:
-                                    for v in vals[1]:
-                                        if v is not None:
-                                            try:
-                                                if float(v) != 0:
-                                                    hay_variacion = True
-                                            except Exception:
-                                                pass
-                    if hay_variacion:
-                        break
-                if not hay_variacion:
-                    patas_sin_datos.append(f"Pata{num}")
-
-            detalle_patas.append({
-                "Sector":               sector,
-                "Pabellon":             f"P{pab}",
-                "Patas sin datos":      ", ".join(patas_sin_datos),
-                "Total patas sin datos": len(patas_sin_datos),
-                "Estado peso":          "Sin datos" if pab in sin_datos else "OK"
-            })
-
-    # Operatividad silos (excluye sectores en vacio operativo)
-    total_pabs, total_sin = 0, 0
-    for r in resumen:
-        if r["Sector"] in sectores_vacios:
-            continue
-        total_pabs += r["Total Pabellones"]
-        if r["Pabellones sin datos"]:
-            total_sin += len(r["Pabellones sin datos"].split(","))
-    total_ok = total_pabs - total_sin
-    pct = round((total_ok / total_pabs * 100), 1) if total_pabs > 0 else 0.0
-
-    print(f"\n  Operatividad Silos: {pct}%")
-    return resumen, detalle_patas, {"total": total_pabs, "ok": total_ok, "fallas": total_sin, "pct": pct}
-
-# ============================================================
-# REPORTE 2: PESO POLLOS
-# ============================================================
-
-def revisar_pabellon_pollos_normal(session, sector, pab):
-    """Logica estandar peso pollos."""
-    query = f"""
-from(bucket: "{BUCKET_SILOS}")
-  |> range(start: -{HORAS_POLLOS}h)
-  |> filter(fn: (r) => r["_measurement"] == "{MEASUREMENT_POLLOS}")
-  |> filter(fn: (r) => r["_field"] == "dia_crianza")
-  |> filter(fn: (r) => r["sector"] == "{sector}")
-  |> filter(fn: (r) => r["pabellon"] == "{pab}")
-  |> last()
-"""
-    res = consultar_influx(session, query, horas=HORAS_POLLOS)
-    dia, _ = extraer_ultimo_valor(res)
-
-    if dia is None:
-        return {"estado": "SIN DATOS", "dia": None, "peso": None, "ts": None}
-
-    dia = int(dia)
-    if dia < DIA_CRIANZA_MIN or dia > DIA_CRIANZA_MAX:
-        return {"estado": "VACIO", "dia": dia, "peso": None, "ts": None}
-
-    # Activo: revisar peso celda
-    query2 = f"""
-from(bucket: "{BUCKET_SILOS}")
-  |> range(start: -{HORAS_POLLOS}h)
-  |> filter(fn: (r) => r["_measurement"] == "{MEASUREMENT_POLLOS}")
-  |> filter(fn: (r) => r["_field"] == "peso_celda")
-  |> filter(fn: (r) => r["sector"] == "{sector}")
-  |> filter(fn: (r) => r["pabellon"] == "{pab}")
-  |> last()
-"""
-    res2 = consultar_influx(session, query2, horas=HORAS_POLLOS)
-    peso, ts = extraer_ultimo_valor(res2)
-
-    if peso is None:
-        return {"estado": "SIN DATOS", "dia": dia, "peso": None, "ts": None}
-    elif PESO_CELDA_MIN <= peso <= PESO_CELDA_MAX:
-        return {"estado": "OK", "dia": dia, "peso": peso, "ts": ts}
-    else:
-        return {"estado": "FALLA", "dia": dia, "peso": peso, "ts": ts}
-
-
-def revisar_pabellon_pollos_donambrosio(session, pab):
-    """Logica especial DonAmbrosio:
-       - Si tiene dia_crianza → equipo nuevo → revisar peso_celda 4000-20000g
-       - Si no tiene dia_crianza → equipo antiguo → revisar valor1-valor20, timestamp 24h
-    """
-    sector = SECTOR_POLLOS_ESPECIAL
-
-    # Verificar dia_crianza
-    query = f"""
-from(bucket: "{BUCKET_SILOS}")
-  |> range(start: -{HORAS_POLLOS}h)
-  |> filter(fn: (r) => r["_measurement"] == "{MEASUREMENT_POLLOS}")
-  |> filter(fn: (r) => r["_field"] == "dia_crianza")
-  |> filter(fn: (r) => r["sector"] == "{sector}")
-  |> filter(fn: (r) => r["pabellon"] == "{pab}")
-  |> last()
-"""
-    res = consultar_influx(session, query, horas=HORAS_POLLOS)
-    dia, _ = extraer_ultimo_valor(res)
-
-    # ── EQUIPO NUEVO: tiene dia_crianza ──
-    if dia is not None:
-        dia = int(dia)
-        query2 = f"""
-from(bucket: "{BUCKET_SILOS}")
-  |> range(start: -{HORAS_POLLOS}h)
-  |> filter(fn: (r) => r["_measurement"] == "{MEASUREMENT_POLLOS}")
-  |> filter(fn: (r) => r["_field"] == "peso_celda")
-  |> filter(fn: (r) => r["sector"] == "{sector}")
-  |> filter(fn: (r) => r["pabellon"] == "{pab}")
-  |> last()
-"""
-        res2 = consultar_influx(session, query2, horas=HORAS_POLLOS)
-        peso, ts = extraer_ultimo_valor(res2)
-
-        if peso is None:
-            return {"estado": "SIN DATOS", "dia": dia, "peso": None, "ts": None, "tipo": "nuevo"}
-        elif PESO_CELDA_MIN <= peso <= PESO_CELDA_MAX:
-            return {"estado": "OK", "dia": dia, "peso": peso, "ts": ts, "tipo": "nuevo"}
-        else:
-            return {"estado": "FALLA", "dia": dia, "peso": peso, "ts": ts, "tipo": "nuevo"}
-
-    # ── EQUIPO ANTIGUO: sin dia_crianza → revisar valor1-valor20 ──
-    ts_valido = False
-    for i in range(1, 21):
-        campo = f"valor{i}"
-        query_v = f"""
-from(bucket: "{BUCKET_SILOS}")
-  |> range(start: -{HORAS_POLLOS}h)
-  |> filter(fn: (r) => r["_measurement"] == "{MEASUREMENT_POLLOS}")
-  |> filter(fn: (r) => r["_field"] == "{campo}")
-  |> filter(fn: (r) => r["sector"] == "{sector}")
-  |> filter(fn: (r) => r["pabellon"] == "{pab}")
-  |> last()
-"""
-        resv = consultar_influx(session, query_v, horas=HORAS_POLLOS)
-        _, ts = extraer_ultimo_valor(resv)
-        if ts:
-            fecha = datetime.fromtimestamp(ts / 1000)
-            if abs((datetime.now() - fecha).days) <= 1:
-                ts_valido = True
-                break
-
-    if ts_valido:
-        return {"estado": "OK", "dia": None, "peso": None, "ts": None, "tipo": "antiguo"}
-    else:
-        return {"estado": "SIN DATOS", "dia": None, "peso": None, "ts": None, "tipo": "antiguo"}
-
-
-def revisar_pollos(session, sectores_vacios=None):
-    if sectores_vacios is None:
-        sectores_vacios = set()
-    print("\n" + "=" * 60)
-    print("  REPORTE 2: PESO POLLOS")
-    print("=" * 60)
-    resumen, detalle = [], []
-
-    for i, sector in enumerate(SECTORES, 1):
-        print(f"[{i:2}/{len(SECTORES)}] {sector}...", end=" ", flush=True)
-        es_especial = sector == SECTOR_POLLOS_ESPECIAL
-
-        # Pabellones
-        if es_especial:
-            pabellones = PABELLONES_FIJOS
-        else:
-            pabellones = obtener_pabellones_sector(session, sector, BUCKET_SILOS, MEASUREMENT_POLLOS)
-            if not pabellones:
-                print("  Sin pabellones")
-                resumen.append({
-                    "Sector": sector, "Total Pabellones": 0,
-                    "Activos (dia 0-44)": 0, "Vacios": 0,
-                    "OK": 0, "Falla peso celda": 0, "Sin datos": 0,
-                    "Pabellones con falla": ""
-                })
-                continue
-
-        activos = vacios = ok = falla = sin_datos = 0
-        pabs_falla = []
-
-        for pab in pabellones:
-            if es_especial:
-                r = revisar_pabellon_pollos_donambrosio(session, pab)
-                dia   = r["dia"]
-                peso  = r["peso"]
-                ts    = r["ts"]
-                estado = r["estado"]
-                tipo  = r.get("tipo", "nuevo")
-
-                # Contadores
-                if estado == "VACIO":
-                    vacios += 1
-                elif estado == "OK":
-                    if tipo == "nuevo" and dia is not None:
-                        activos += 1
-                    ok += 1
-                elif estado == "SIN DATOS":
-                    sin_datos += 1
-                    pabs_falla.append(f"P{pab}(SD)")
-                elif estado == "FALLA":
-                    falla += 1
-                    pabs_falla.append(f"P{pab}({int(peso)}g)" if peso else f"P{pab}")
-
-                detalle.append({
-                    "Sector":         sector,
-                    "Pabellon":       f"P{pab}",
-                    "Dia Crianza":    dia if dia is not None else "",
-                    "Estado":         estado,
-                    "Peso Celda (g)": round(peso, 1) if peso is not None else "",
-                    "Ultima hora":    ts_a_hora(ts)
-                })
-
-            else:
-                r = revisar_pabellon_pollos_normal(session, sector, pab)
-                dia   = r["dia"]
-                peso  = r["peso"]
-                ts    = r["ts"]
-                estado = r["estado"]
-
-                if estado == "VACIO":
-                    vacios += 1
-                elif estado == "OK":
-                    activos += 1
-                    ok += 1
-                elif estado == "SIN DATOS":
-                    sin_datos += 1
-                    pabs_falla.append(f"P{pab}(SD)")
-                elif estado == "FALLA":
-                    activos += 1
-                    falla += 1
-                    pabs_falla.append(f"P{pab}({int(peso)}g)" if peso else f"P{pab}")
-
-                detalle.append({
-                    "Sector":         sector,
-                    "Pabellon":       f"P{pab}",
-                    "Dia Crianza":    dia if dia is not None else "",
-                    "Estado":         estado,
-                    "Peso Celda (g)": round(peso, 1) if peso is not None else "",
-                    "Ultima hora":    ts_a_hora(ts)
-                })
-
-        falla_str = ", ".join(pabs_falla) if pabs_falla else ""
-        print(f"  {falla + sin_datos} problemas" if falla_str else f"  OK ({activos} activos, {vacios} vacios)")
-
-        resumen.append({
-            "Sector": sector, "Total Pabellones": len(pabellones),
-            "Activos (dia 0-44)": activos, "Vacios": vacios,
-            "OK": ok, "Falla peso celda": falla, "Sin datos": sin_datos,
-            "Pabellones con falla": falla_str
-        })
-
-    # Operatividad pollos
-    total_activos = sum(r["Activos (dia 0-44)"] for r in resumen)
-    total_ok_p    = sum(r["OK"] for r in resumen)
-    total_falla_p = sum(r["Falla peso celda"] + r["Sin datos"] for r in resumen)
-    pct = round((total_ok_p / total_activos * 100), 1) if total_activos > 0 else 0.0
-
-    print(f"\n  Operatividad Pollos: {pct}%")
-    return resumen, detalle, {"total": total_activos, "ok": total_ok_p, "fallas": total_falla_p, "pct": pct}
-
-# ============================================================
-# REPORTE 3: FLUJOMETROS
-# ============================================================
-
-def revisar_flujometros(session):
-    print("\n" + "=" * 60)
-    print("  REPORTE 3: FLUJOMETROS POLLOS")
-    print("=" * 60)
-    resumen = []
-
-    for i, sector in enumerate(SECTORES, 1):
-        print(f"[{i:2}/{len(SECTORES)}] {sector}...", end=" ", flush=True)
-        pabellones = obtener_pabellones_sector(
-            session, sector, BUCKET_FLUJOMETROS, MEASUREMENT_FLUJO, app=APP_FLUJOMETROS
-        )
-
-        if not pabellones:
-            print("  Sin flujometros")
-            resumen.append({"Sector": sector, "Total Flujometros": 0, "Sin datos": 0, "Flujometros sin datos": ""})
-            continue
-
-        sin_datos, pabs_sin = 0, []
-        for pab in pabellones:
-            query = f"""
-from(bucket: "{BUCKET_FLUJOMETROS}")
-  |> range(start: -{HORAS_FLUJOMETROS}h)
-  |> filter(fn: (r) => r["_measurement"] == "{MEASUREMENT_FLUJO}")
-  |> filter(fn: (r) => r["_field"] == "litros")
-  |> filter(fn: (r) => r["sector"] == "{sector}")
-  |> filter(fn: (r) => r["pabellon"] == "{pab}")
-  |> filter(fn: (r) => r["applicationName"] == "{APP_FLUJOMETROS}")
-  |> last()
-"""
-            res = consultar_influx(session, query, horas=HORAS_FLUJOMETROS)
-            val, _ = extraer_ultimo_valor(res)
-            if val is None:
-                sin_datos += 1
-                pabs_sin.append(f"P{pab}")
-
-        sin_str = ", ".join(pabs_sin) if pabs_sin else ""
-        print(f"  {sin_datos} sin datos" if sin_str else f"  OK ({len(pabellones)} flujometros)")
-
-        resumen.append({
-            "Sector": sector,
-            "Total Flujometros": len(pabellones),
-            "Sin datos": sin_datos,
-            "Flujometros sin datos": sin_str
-        })
-
-    total_flujo = sum(r["Total Flujometros"] for r in resumen)
-    total_sin_f = sum(r["Sin datos"] for r in resumen)
-    total_ok_f  = total_flujo - total_sin_f
-    pct = round((total_ok_f / total_flujo * 100), 1) if total_flujo > 0 else 0.0
-
-    print(f"\n  Operatividad Flujometros: {pct}%")
-    return resumen, {"total": total_flujo, "ok": total_ok_f, "fallas": total_sin_f, "pct": pct}
-
-# ============================================================
-# HOJA PENDIENTES
-# ============================================================
-
-def construir_pendientes(res_silos, res_pollos, res_flujo, det_pollos):
-    dias_map = {}
-    for fila in det_pollos:
-        key = (fila["Sector"], fila["Pabellon"])
-        if fila.get("Dia Crianza") != "":
-            dias_map[key] = fila["Dia Crianza"]
-
-    fallas_silos  = {r["Sector"]: set(
-        p.strip() for p in r["Pabellones sin datos"].split(",") if p.strip()
-    ) for r in res_silos}
-
-    fallas_pollos = {r["Sector"]: set(
-        p.strip().split("(")[0] for p in r["Pabellones con falla"].split(",") if p.strip()
-    ) for r in res_pollos}
-
-    fallas_flujo  = {r["Sector"]: set(
-        p.strip() for p in r["Flujometros sin datos"].split(",") if p.strip()
-    ) for r in res_flujo}
-
-    todos_sectores = set(r["Sector"] for r in res_silos + res_pollos + res_flujo)
-
-    filas = []
-    for sector in sorted(todos_sectores):
-        pabs_con_falla = set()
-        pabs_con_falla.update(fallas_silos.get(sector, set()))
-        pabs_con_falla.update(fallas_pollos.get(sector, set()))
-        pabs_con_falla.update(fallas_flujo.get(sector, set()))
-
-        def sort_pab(p):
-            partes = re.split(r'(\d+)', p)
-            return [int(x) if x.isdigit() else x.lower() for x in partes]
-
-        for pab in sorted(pabs_con_falla, key=sort_pab):
-            dia = dias_map.get((sector, pab), "")
-            es_critico = isinstance(dia, (int, float)) and DIA_CRIANZA_MIN <= int(dia) <= DIA_CRIANZA_MAX
-
-            filas.append({
-                "Sector":      sector,
-                "Pabellon":    pab,
-                "Edad (dias)": dia,
-                "Peso Silos":  "⚠️" if pab in fallas_silos.get(sector, set()) else "✅",
-                "Peso Pollos": "⚠️" if pab in fallas_pollos.get(sector, set()) else "✅",
-                "Flujometros": "⚠️" if pab in fallas_flujo.get(sector, set()) else "✅",
-                "_critico":    es_critico
-            })
-
-    return filas
-
-# ============================================================
-# EXCEL CONSOLIDADO
-# ============================================================
-
-def generar_excel(res_silos, det_patas, res_pollos, det_pollos, res_flujo,
-                  op_silos, op_pollos, op_flujo, pendientes):
-    from openpyxl.styles import PatternFill, Font, Alignment
-
-    fecha_hora = datetime.now().strftime("%Y%m%d_%H%M")
-    nombre     = f"reporte_consolidado_{fecha_hora}.xlsx"
-
-    c_header  = PatternFill("solid", fgColor="1F4E79")
-    c_verde   = PatternFill("solid", fgColor="CCFFCC")
-    c_rojo    = PatternFill("solid", fgColor="FFCCCC")
-    c_naranja = PatternFill("solid", fgColor="FFE0B2")
-    c_azul    = PatternFill("solid", fgColor="D9E8FB")
-    c_gris    = PatternFill("solid", fgColor="EEEEEE")
-    c_rojo_f  = PatternFill("solid", fgColor="FF4444")
-    f_header  = Font(color="FFFFFF", bold=True)
-    f_bold    = Font(bold=True)
-
-    global_pct = round((op_silos["pct"] + op_pollos["pct"] + op_flujo["pct"]) / 3, 1)
-
-    def estado_icon(pct):
-        return "✅" if pct >= META_OPERATIVIDAD else "⚠️"
-
-    with pd.ExcelWriter(nombre, engine="openpyxl") as writer:
-
-        # ── HOJA 1: RESUMEN ──────────────────────────────────────
-        df_res = pd.DataFrame([
-            {"Reporte": "Peso Silos",        "Total": op_silos["total"],  "OK": op_silos["ok"],  "Fallas": op_silos["fallas"],  "% Operatividad": f"{op_silos['pct']}%",  "Estado": estado_icon(op_silos["pct"])},
-            {"Reporte": "Peso Pollos",        "Total": op_pollos["total"], "OK": op_pollos["ok"], "Fallas": op_pollos["fallas"], "% Operatividad": f"{op_pollos['pct']}%", "Estado": estado_icon(op_pollos["pct"])},
-            {"Reporte": "Flujometros Pollos", "Total": op_flujo["total"],  "OK": op_flujo["ok"],  "Fallas": op_flujo["fallas"],  "% Operatividad": f"{op_flujo['pct']}%",  "Estado": estado_icon(op_flujo["pct"])},
-            {"Reporte": "GLOBAL",             "Total": "",                 "OK": "",              "Fallas": "",                  "% Operatividad": f"{global_pct}%",        "Estado": estado_icon(global_pct)},
-        ])
-        df_res.to_excel(writer, sheet_name="Resumen", index=False)
-        ws = writer.sheets["Resumen"]
-        for cell in ws[1]:
-            cell.fill = c_header; cell.font = f_header
-            cell.alignment = Alignment(horizontal="center")
-        for row in ws.iter_rows(min_row=2):
-            pct_str = str(row[4].value or "").replace("%", "")
-            try:
-                pct_val = float(pct_str)
-                fill = c_verde if pct_val >= META_OPERATIVIDAD else c_rojo
-            except Exception:
-                fill = c_azul
-            if row[0].value == "GLOBAL":
-                for cell in row: cell.font = f_bold
-            for cell in row:
-                cell.fill = fill
-                cell.alignment = Alignment(horizontal="center")
-        for col, w in zip("ABCDEF", [22, 10, 10, 10, 18, 10]):
-            ws.column_dimensions[col].width = w
-
-        # ── HOJA 2: PENDIENTES ───────────────────────────────────
-        df_pend = pd.DataFrame(
-            [{k: v for k, v in f.items() if k != "_critico"} for f in pendientes],
-            columns=["Sector", "Pabellon", "Edad (dias)", "Peso Silos", "Peso Pollos", "Flujometros"]
-        ) if pendientes else pd.DataFrame({"Mensaje": ["Sin fallas registradas"]})
-
-        df_pend.to_excel(writer, sheet_name="Pendientes", index=False)
-        ws2 = writer.sheets["Pendientes"]
-        for cell in ws2[1]:
-            cell.fill = c_header; cell.font = f_header
-            cell.alignment = Alignment(horizontal="center")
-        if pendientes:
-            for row, fila in zip(ws2.iter_rows(min_row=2), pendientes):
-                fill = c_rojo_f if fila["_critico"] else c_naranja
-                for cell in row:
-                    cell.fill = fill
-                    cell.alignment = Alignment(horizontal="center")
-        for col, w in zip("ABCDEF", [22, 12, 14, 14, 14, 14]):
-            ws2.column_dimensions[col].width = w
-
-        # ── HOJA 3: PESO SILOS - RESUMEN ────────────────────────
-        df_silos = pd.DataFrame(res_silos, columns=["Sector", "Pabellones sin datos", "Total Pabellones"])
-        df_silos.to_excel(writer, sheet_name="Peso Silos - Resumen Sector", index=False)
-        ws3 = writer.sheets["Peso Silos - Resumen Sector"]
-        for cell in ws3[1]:
-            cell.fill = c_header; cell.font = f_header
-            cell.alignment = Alignment(horizontal="center")
-        for row in ws3.iter_rows(min_row=2):
-            total = row[2].value or 0
-            pabs  = str(row[1].value) if row[1].value else ""
-            fill  = c_gris if total == 0 else (c_rojo if pabs else c_verde)
-            for cell in row:
-                cell.fill = fill
-                cell.alignment = Alignment(horizontal="left", wrap_text=True)
-        for col, w in zip("ABC", [22, 45, 18]):
-            ws3.column_dimensions[col].width = w
-
-        # ── HOJA 4: PESO SILOS - DETALLE PATAS ──────────────────
-        df_patas = pd.DataFrame(det_patas) if det_patas else pd.DataFrame({"Mensaje": ["Sin datos"]})
-        if "Patas sin datos" in df_patas.columns:
-            df_patas = df_patas[df_patas["Patas sin datos"] != ""].copy()
-        df_patas.to_excel(writer, sheet_name="Peso Silos - Detalle Patas", index=False)
-        ws4 = writer.sheets["Peso Silos - Detalle Patas"]
-        for cell in ws4[1]:
-            cell.fill = c_header; cell.font = f_header
-            cell.alignment = Alignment(horizontal="center")
-        for row in ws4.iter_rows(min_row=2):
-            estado = str(row[4].value) if len(row) > 4 else ""
-            fill   = c_rojo if estado == "Sin datos" else c_naranja
-            for cell in row:
-                cell.fill = fill
-                cell.alignment = Alignment(horizontal="left", wrap_text=True)
-        for col, w in zip("ABCDE", [22, 12, 50, 22, 15]):
-            ws4.column_dimensions[col].width = w
-
-        # ── HOJA 5: PESO POLLOS ──────────────────────────────────
-        dias_por_sector = defaultdict(list)
-        for fila in det_pollos:
-            if fila.get("Estado") not in ("VACIO", "SIN DATOS", "") and fila.get("Dia Crianza") != "":
-                try:
-                    dias_por_sector[fila["Sector"]].append(int(fila["Dia Crianza"]))
-                except Exception:
-                    pass
-
-        filas_pollos = []
-        for r in res_pollos:
-            sector = r["Sector"]
-            dias   = dias_por_sector.get(sector, [])
-            dia_p  = round(sum(dias) / len(dias)) if dias else ""
-            filas_pollos.append({
-                "Sector":               sector,
-                "Total Pabellones":     r["Total Pabellones"],
-                "Activos":              r["Activos (dia 0-44)"],
-                "Dia Crianza":          dia_p,
-                "Falla peso celda":     r["Falla peso celda"],
-                "Sin datos":            r["Sin datos"],
-                "Pabellones con falla": r["Pabellones con falla"]
-            })
-
-        df_pollos = pd.DataFrame(filas_pollos)
-        df_pollos.to_excel(writer, sheet_name="Peso Pollos", index=False)
-        ws5 = writer.sheets["Peso Pollos"]
-        for cell in ws5[1]:
-            cell.fill = c_header; cell.font = f_header
-            cell.alignment = Alignment(horizontal="center")
-        for row in ws5.iter_rows(min_row=2):
-            activos = row[2].value or 0
-            falla_n = (row[4].value or 0) + (row[5].value or 0)
-            fill = c_gris if row[1].value == 0 else (c_azul if activos == 0 else (c_rojo if falla_n > 0 else c_verde))
-            for cell in row:
-                cell.fill = fill
-                cell.alignment = Alignment(horizontal="left", wrap_text=True)
-        for col, w in zip("ABCDEFG", [22, 16, 10, 14, 18, 12, 55]):
-            ws5.column_dimensions[col].width = w
-
-        # ── HOJA 6: FLUJOMETROS ──────────────────────────────────
-        df_flujo = pd.DataFrame(res_flujo, columns=["Sector", "Total Flujometros", "Sin datos", "Flujometros sin datos"])
-        df_flujo.to_excel(writer, sheet_name="Flujometros Pollos", index=False)
-        ws6 = writer.sheets["Flujometros Pollos"]
-        for cell in ws6[1]:
-            cell.fill = c_header; cell.font = f_header
-            cell.alignment = Alignment(horizontal="center")
-        for row in ws6.iter_rows(min_row=2):
-            total   = row[1].value or 0
-            sin_dat = row[2].value or 0
-            fill    = c_gris if total == 0 else (c_rojo if sin_dat > 0 else c_verde)
-            for cell in row:
-                cell.fill = fill
-                cell.alignment = Alignment(horizontal="left", wrap_text=True)
-        for col, w in zip("ABCD", [22, 18, 12, 55]):
-            ws6.column_dimensions[col].width = w
-
-    print(f"\n  Excel generado: {nombre}")
-    return nombre, global_pct
-
-# ============================================================
-# GOOGLE SHEETS - HISTORIAL
-# ============================================================
-
-def actualizar_google_sheets(op_silos, op_pollos, op_flujo, global_pct):
-    try:
-        import gspread
-        from google.oauth2.service_account import Credentials
-
-        creds_json = os.environ.get("GOOGLE_CREDENTIALS", "")
-        sheet_id   = os.environ.get("GOOGLE_SHEETS_ID", "1o7Iby_M6DFsm5WH4vCmx0PEss1JeFBya9w8uBtRsSlY")
-
-        if not creds_json:
-            print("  GOOGLE_CREDENTIALS no configurado, omitiendo Google Sheets.")
-            return
-
-        creds_dict = json.loads(creds_json)
-        creds = Credentials.from_service_account_info(
-            creds_dict,
-            scopes=["https://www.googleapis.com/auth/spreadsheets"]
-        )
-        gc = gspread.authorize(creds)
-        sh = gc.open_by_key(sheet_id)
-
-        try:
-            ws = sh.worksheet("Historial")
-        except Exception:
-            ws = sh.add_worksheet(title="Historial", rows="1000", cols="10")
-            ws.append_row(["Fecha", "Peso Silos %", "Peso Pollos %", "Flujometros %", "Global %"])
-
-        fecha = datetime.now().strftime("%d/%m/%Y")
-        ws.append_row([fecha, op_silos["pct"], op_pollos["pct"], op_flujo["pct"], global_pct])
-        print(f"  Google Sheets actualizado: {fecha}")
-
-    except Exception as e:
-        print(f"  Error actualizando Google Sheets: {e}")
-
-# ============================================================
-# CSV HISTORIAL EN GITHUB
-# ============================================================
-
-def actualizar_csv_historial(op_silos, op_pollos, op_flujo, global_pct):
-    try:
-        os.makedirs("historial", exist_ok=True)
-        fecha   = datetime.now().strftime("%d/%m/%Y")
-        encabez = ["Fecha", "Peso Silos %", "Peso Pollos %", "Flujometros %", "Global %"]
-        nueva   = [fecha, op_silos["pct"], op_pollos["pct"], op_flujo["pct"], global_pct]
-        existe  = os.path.exists(HISTORIAL_PATH)
-
-        with open(HISTORIAL_PATH, "a", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            if not existe:
-                writer.writerow(encabez)
-            writer.writerow(nueva)
-
-        print(f"  CSV historial actualizado: {HISTORIAL_PATH}")
-    except Exception as e:
-        print(f"  Error actualizando CSV: {e}")
-
-# ============================================================
-# CORREO CONSOLIDADO
-# ============================================================
-
-def enviar_correo(archivo, op_silos, op_pollos, op_flujo, global_pct):
-    correo_origen  = os.environ.get("GMAIL_CORREO", "")
-    clave_app      = os.environ.get("GMAIL_CLAVE", "")
-    correo_destino = os.environ.get("CORREO_DESTINO", correo_origen)
-
-    if not correo_origen or not clave_app:
-        print("  Credenciales de correo no configuradas, omitiendo envio.")
-        return
-
-    def estado(pct):
-        return "✅ Sobre el 95%" if pct >= META_OPERATIVIDAD else "⚠️ Bajo el 95%"
-
-    cuerpo = f"""Estimado/a,
-
-Resumen diario de operatividad del sistema - {datetime.now().strftime("%d/%m/%Y %H:%M")}
-
-{'='*52}
-📊 Reporte 1: Peso Silos
-   Total equipos : {op_silos['total']}
-   OK            : {op_silos['ok']}
-   Fallas        : {op_silos['fallas']}
-   Operatividad  : {op_silos['pct']}%  {estado(op_silos['pct'])}
-
-📊 Reporte 2: Peso Pollos
-   Total activos : {op_pollos['total']}
-   OK            : {op_pollos['ok']}
-   Fallas        : {op_pollos['fallas']}
-   Operatividad  : {op_pollos['pct']}%  {estado(op_pollos['pct'])}
-
-📊 Reporte 3: Flujometros Pollos
-   Total equipos : {op_flujo['total']}
-   OK            : {op_flujo['ok']}
-   Fallas        : {op_flujo['fallas']}
-   Operatividad  : {op_flujo['pct']}%  {estado(op_flujo['pct'])}
-{'='*52}
-🌐 Operatividad Global del Sistema: {global_pct}%  {estado(global_pct)}
-   Meta minima: {META_OPERATIVIDAD}%
-{'='*52}
-
-Se adjunta el archivo Excel con el detalle completo (6 hojas).
-
----
-Reporte generado automaticamente.
-"""
-
-    msg = MIMEMultipart()
-    msg["From"]    = correo_origen
-    msg["To"]      = correo_destino
-    msg["Subject"] = f"Reporte Consolidado {datetime.now().strftime('%d/%m/%Y')} | Global: {global_pct}% {estado(global_pct)}"
-    msg.attach(MIMEText(cuerpo, "plain", "utf-8"))
-
-    with open(archivo, "rb") as f:
-        parte = MIMEBase("application", "octet-stream")
-        parte.set_payload(f.read())
-        encoders.encode_base64(parte)
-        parte.add_header("Content-Disposition", f"attachment; filename={os.path.basename(archivo)}")
-        msg.attach(parte)
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as servidor:
-        servidor.login(correo_origen, clave_app)
-        servidor.sendmail(correo_origen, correo_destino, msg.as_string())
-
-    print(f"  Correo enviado a {correo_destino}")
-
-# ============================================================
-# MAIN
-# ============================================================
-
-def main():
-    print("=" * 60)
-    print("  REPORTE CONSOLIDADO DIARIO")
-    print(f"  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
-    print("=" * 60)
-
-    session = obtener_sesion()
-
-    res_silos,  det_patas,  op_silos  = revisar_silos(session)
-    res_pollos, det_pollos, op_pollos = revisar_pollos(session)
-    res_flujo,              op_flujo  = revisar_flujometros(session)
-
-    pendientes = construir_pendientes(res_silos, res_pollos, res_flujo, det_pollos)
-
-    print("\nGenerando Excel consolidado...")
-    archivo, global_pct = generar_excel(
-        res_silos, det_patas, res_pollos, det_pollos, res_flujo,
-        op_silos, op_pollos, op_flujo, pendientes
-    )
-
-    print("\nActualizando historial...")
-    actualizar_google_sheets(op_silos, op_pollos, op_flujo, global_pct)
-    actualizar_csv_historial(op_silos, op_pollos, op_flujo, global_pct)
-
-    print("\nEnviando correo consolidado...")
-    enviar_correo(archivo, op_silos, op_pollos, op_flujo, global_pct)
-
-    print("\n" + "=" * 60)
-    print(f"  Operatividad Global: {global_pct}%")
-    print(f"  Silos: {op_silos['pct']}% | Pollos: {op_pollos['pct']}% | Flujometros: {op_flujo['pct']}%")
-    print("=" * 60)
-
-if __name__ == "__main__":
-    main()
+  }
+
+  // Filas intervenciones
+  var filasHtml = "";
+  for (var fi = 0; fi < s.filas.length; fi++) {
+    var f = s.filas[fi];
+    var pabOpts = '<option value="">—</option>';
+    for (var k = 0; k < PABELLONES.length; k++)
+      pabOpts += '<option'+(f.pabellon===PABELLONES[k]?' selected':'')+'>'+PABELLONES[k]+'</option>';
+    var slOpts = '<option value="">—</option>';
+    for (var k = 0; k < SL.length; k++)
+      slOpts += '<option'+(f.sl===SL[k]?' selected':'')+'>'+SL[k]+'</option>';
+    var accOpts = '<option value="">—</option>';
+    for (var k = 0; k < ACCIONES.length; k++)
+      accOpts += '<option'+(f.accion===ACCIONES[k]?' selected':'')+'>'+ACCIONES[k]+'</option>';
+    var repOpts = '<option value="">—</option>';
+    for (var k = 0; k < REPUESTOS.length; k++)
+      repOpts += '<option'+(f.repuesto===REPUESTOS[k]?' selected':'')+'>'+REPUESTOS[k]+'</option>';
+    var celdasCell = f.sl && f.sl.indexOf("Silo")===0
+      ? '<td class="active-cell"><input type="text" value="'+(f.celdas||"")+'" placeholder="1,2..." onchange="updateCeldas('+fi+',this.value)"></td>'
+      : '<td class="locked">—</td>';
+    var repuestoCell = '<td>'
+      +'<select onchange="updateRepuesto('+fi+',this.value)">'+repOpts+'</select>'
+      +(f.repuesto==="Otro (escribir)"
+        ? '<input class="otro-input" type="text" placeholder="Escribe el repuesto..." value="'+(f.repuestoOtro||"")+'" onchange="updateFila('+fi+',\'repuestoOtro\',this.value)">'
+        : '')
+      +'</td>';
+    var delBtn = s.filas.length > 1
+      ? '<button onclick="removeFila('+fi+')" style="background:none;border:none;color:#e53935;cursor:pointer;font-size:14px">✕</button>' : "";
+    filasHtml += '<tr>'
+      +'<td><select onchange="updateFila('+fi+',\'pabellon\',this.value)">'+pabOpts+'</select></td>'
+      +'<td class="sl-cell"><select onchange="updateSL('+fi+',this.value)" style="min-width:80px">'+slOpts+'</select></td>'
+      +celdasCell
+      +'<td><select onchange="updateFila('+fi+',\'accion\',this.value)">'+accOpts+'</select></td>'
+      +repuestoCell
+      +'<td style="text-align:center;background:#f8f9fa;vertical-align:middle"><input type="number" min="1" value="'+(f.cantidad||"")+'" style="width:36px;text-align:center" onchange="updateFila('+fi+',\'cantidad\',this.value)"></td>'
+      +'<td style="text-align:center;vertical-align:middle">'+delBtn+'</td>'
+      +'</tr>';
+  }
+
+  // Estado del sector
+  var estadoHtml = "";
+  for (var i = 0; i < ESTADOS.length; i++) {
+    var est = ESTADOS[i];
+    var isEst = s.estados && s.estados.indexOf(est.label) > -1;
+    var isOtro = est.label === "Otro (especificar)";
+    estadoHtml += '<div class="estado-item'+(isEst?" active":"")+'" onclick="toggleEstado('+i+')">'
+      +'<input type="checkbox"'+(isEst?" checked":"")+' style="width:16px;height:16px;margin-top:2px;flex-shrink:0;accent-color:#1a73e8" onclick="toggleEstado('+i+');event.stopPropagation()">'
+      +'<div><div class="estado-label">'+est.label+'</div></div></div>';
+    if (isOtro && isEst) {
+      estadoHtml += '<div class="estado-otro">'
+        +'<input type="text" placeholder="Especifica..." value="'+(s.estadoOtro||"")+'" onchange="updateEstadoOtro(this.value)">'
+        +'</div>';
+    }
+  }
+
+  return '<div class="card">'
+    +'<div class="card-header blue">DATOS DEL SECTOR</div>'
+    +'<div class="datos-grid">'
+    +'<div class="dato-cell"><div class="dato-label">Fecha</div><input class="dato-input" value="'+s.fecha+'" onchange="updateSector(\'fecha\',this.value)" placeholder="DD-MM-AAAA"></div>'
+    +'<div class="dato-cell"><div class="dato-label">Sector</div><select class="dato-input" onchange="updateSector(\'sector\',this.value)">'+sectOpts+'</select></div>'
+    +'<div class="dato-cell"><div class="dato-label">N° IO</div><input class="dato-input" value="'+s.io+'" onchange="updateSector(\'io\',this.value)" placeholder="Ej: 81292"></div>'
+    +'</div></div>'
+    +'<div class="card"><div class="card-header blue">TRABAJOS REALIZADOS — '+s.actividades.length+' seleccionados</div>'
+    +'<div class="act-grid">'+actHtml+'</div></div>'
+    +'<div class="card"><div class="card-header blue">INTERVENCIONES</div>'
+    +'<div style="overflow-x:auto"><table><thead><tr>'
+    +'<th>Pabellón</th><th>S/L</th><th>Celda(s)</th><th>Acción</th><th>Repuesto</th><th>Cant.</th><th></th>'
+    +'</tr></thead><tbody>'+filasHtml+'</tbody></table></div>'
+    +'<button class="add-fila" onclick="addFila()">+ Agregar fila</button></div>'
+    +'<div class="card"><div class="card-header blue">ESTADO DEL SECTOR</div>'
+    +'<div class="estado-grid">'+estadoHtml+'</div></div>'
+    +'<div class="card"><div class="card-header gray">📝 OBSERVACIONES</div>'
+    +'<textarea placeholder="Información relevante del sector..." onchange="updateSector(\'observaciones\',this.value)">'+s.observaciones+'</textarea></div>'
+    +(sectores.length>1 ? '<button class="btn btn-red" onclick="confirmarEliminar('+activeSector+')">🗑 Eliminar este sector</button>' : '');
+}
+
+function renderResumen(s) {
+  var html = '<div class="card"><div class="card-header green"><span>📤 RESUMEN WHATSAPP</span>'
+    +(s.resumenTxt ? '<button class="copy-btn" onclick="copiarResumen()">📋 Copiar</button>' : '')
+    +'</div><pre id="resumenPre">'+(s.resumenTxt||"Presiona 'Generar resumen' para ver el texto.")+'</pre></div>';
+  if (!s.enviado) html += '<button class="btn btn-blue" onclick="generarResumen()">'+(s.resumengenerado?'🔄 Regenerar resumen WhatsApp':'📄 Generar resumen WhatsApp')+'</button>';
+  if (s.resumengenerado && !s.enviado) html += '<button class="btn btn-green" onclick="enviarBD()">✅ Enviar a base de datos</button>';
+  if (s.enviado) {
+    html += '<div class="enviado-badge">✅ Datos en BD — ID: '+s.idBase+'</div>';
+    html += '<button class="btn btn-gray" onclick="limpiarHoja()">🧹 Limpiar para nuevo reporte</button>';
+  }
+  return html;
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById("tabDatos").className = "sub-tab"+(tab==="datos"?" active":"");
+  document.getElementById("tabResumen").className = "sub-tab"+(tab==="resumen"?" active":"");
+  document.getElementById("navDatos").className = "nav-btn"+(tab==="datos"?" active":"");
+  document.getElementById("navResumen").className = "nav-btn"+(tab==="resumen"?" active":"");
+  renderContent();
+}
+
+function switchSector(i) { activeSector=i; currentTab="datos"; render(); }
+function addSector() { sectores.push(emptySector()); activeSector=sectores.length-1; currentTab="datos"; render(); guardarEstado(); }
+function updateSector(field,val) { sectores[activeSector][field]=val; renderTabs(); guardarEstado(); }
+function updateFila(fi,field,val) { sectores[activeSector].filas[fi][field]=val; guardarEstado(); }
+function addFila() { sectores[activeSector].filas.push(emptyFila()); renderContent(); guardarEstado(); }
+function removeFila(fi) { sectores[activeSector].filas.splice(fi,1); renderContent(); guardarEstado(); }
+function updateActOtro(val) { sectores[activeSector].actOtro=val; guardarEstado(); }
+function updateEstadoOtro(val) { sectores[activeSector].estadoOtro=val; guardarEstado(); }
+
+function updateSL(fi,val) {
+  sectores[activeSector].filas[fi].sl=val;
+  sectores[activeSector].filas[fi].celdas="";
+  sectores[activeSector].filas[fi].cantidad=val.indexOf("Lado")===0?"1":"";
+  renderContent(); guardarEstado();
+}
+
+function updateCeldas(fi,val) {
+  sectores[activeSector].filas[fi].celdas=val;
+  var n=val.split(/[\s,\-\.]+/).filter(function(x){return x.trim()!=="";});
+  sectores[activeSector].filas[fi].cantidad=n.length>0?String(n.length):"";
+  guardarEstado();
+}
+
+function updateRepuesto(fi,val) {
+  sectores[activeSector].filas[fi].repuesto=val;
+  if (val!=="Otro (escribir)") sectores[activeSector].filas[fi].repuestoOtro="";
+  renderContent(); guardarEstado();
+}
+
+function toggleAct(i) {
+  var s=sectores[activeSector];
+  var act=ACTIVIDADES[i];
+  var idx=s.actividades.indexOf(act);
+  if (idx>-1) s.actividades.splice(idx,1);
+  else s.actividades.push(act);
+  renderContent(); guardarEstado();
+}
+
+function toggleEstado(i) {
+  var s=sectores[activeSector];
+  if (!s.estados) s.estados=[];
+  var label=ESTADOS[i].label;
+  var idx=s.estados.indexOf(label);
+  if (idx>-1) s.estados.splice(idx,1);
+  else s.estados.push(label);
+  renderContent(); guardarEstado();
+}
+
+function getRepuestoFinal(f) {
+  return f.repuesto==="Otro (escribir)" ? (f.repuestoOtro||"") : f.repuesto;
+}
+
+function generarResumenSector(s) {
+  if (!s.sector||!s.io) return null;
+  var txt="────────────────────────────────\n";
+  txt+="Fecha: "+s.fecha+"\nSector: "+s.sector+"\nIO: "+s.io+"\n";
+
+  // Trabajos realizados
+  if (s.actividades.length) {
+    txt+="\n✅ Trabajos realizados:\n";
+    for (var i=0;i<s.actividades.length;i++) {
+      var act=s.actividades[i];
+      if (act==="Otro (especificar)"&&s.actOtro) txt+="  • "+s.actOtro+"\n";
+      else if (act!=="Otro (especificar)") txt+="  • "+act+"\n";
+    }
+  }
+
+  var rep=[],pen=[],cam=[];
+  for (var i=0;i<s.filas.length;i++) {
+    var f=s.filas[i];
+    if (!f.pabellon) continue;
+    var cantidad=f.cantidad;
+    if (f.sl&&f.sl.indexOf("Silo")===0&&f.celdas) {
+      var n=f.celdas.split(/[\s,\-\.]+/).filter(function(x){return x.trim()!=="";});
+      if (n.length>0) cantidad=String(n.length);
+    }
+    var rep_final=getRepuestoFinal(f);
+    var linea="  Pab "+f.pabellon+(f.sl?" - "+f.sl:"")+(rep_final?", "+rep_final:"")+(f.celdas?" N°"+f.celdas:"")+(cantidad?" (x"+cantidad+")":"");
+    if (f.accion==="Reparado") rep.push(linea);
+    else if (f.accion==="Pendiente") pen.push(linea);
+    else if (f.accion==="Cambiado") cam.push({linea:linea,repuesto:rep_final,cantidad:cantidad});
+  }
+  if (rep.length) txt+="\n🟢 Reparado:\n"+rep.join("\n")+"\n";
+  if (pen.length) txt+="\n🔴 Pendiente:\n"+pen.join("\n")+"\n";
+  if (cam.length) {
+    txt+="\n🔵 Cambiado:\n";
+    for (var i=0;i<cam.length;i++) txt+=cam[i].linea+"\n";
+    var resMap={};
+    for (var i=0;i<cam.length;i++) if(cam[i].repuesto) resMap[cam[i].repuesto]=(cam[i].cantidad||"1")+"x "+cam[i].repuesto;
+    var resArr=[]; for(var k in resMap) resArr.push(resMap[k]);
+    if (resArr.length) txt+="\n📦 Resumen cambios:\n"+resArr.join("\n")+"\n";
+  }
+  if (s.observaciones&&s.observaciones.trim()) txt+="\n📝 Observaciones: "+s.observaciones.trim()+"\n";
+  if (s.estados&&s.estados.length) {
+    txt+="\n📋 Notas de sector:\n";
+    for (var i=0;i<s.estados.length;i++) {
+      var est=s.estados[i];
+      if (est==="Otro (especificar)"&&s.estadoOtro) txt+="  • "+s.estadoOtro+"\n";
+      else if (est!=="Otro (especificar)") txt+="  • "+est+"\n";
+    }
+  }
+  return txt;
+}
+
+function generarResumen() {
+  var sinDatos=true;
+  for (var i=0;i<sectores.length;i++) if(sectores[i].sector&&sectores[i].io){sinDatos=false;break;}
+  if (sinDatos){showMsg("⚠️ Completa al menos un Sector e IO.",false);return;}
+  var txt="INFORME SISTEMAS DE PESAJE\n";
+  for (var i=0;i<sectores.length;i++){var b=generarResumenSector(sectores[i]);if(b)txt+="\n"+b;}
+  sectores[activeSector].resumenTxt=txt;
+  sectores[activeSector].resumengenerado=true;
+  guardarEstado();
+  switchTab("resumen");
+  showMsg("✅ Resumen generado. Cópialo y luego envía a BD.");
+}
+
+function copiarResumen() {
+  var txt=sectores[activeSector].resumenTxt;
+  if (navigator.clipboard) navigator.clipboard.writeText(txt);
+  showMsg("📋 Copiado al portapapeles.");
+}
+
+function enviarBD() {
+  var s=sectores[activeSector];
+  if (!s.resumengenerado){showMsg("⚠️ Primero genera el resumen.",false);return;}
+  if (s.enviado){showMsg("ℹ️ Ya fue enviado.",false);return;}
+  showMsg("⏳ Enviando datos...");
+  var filas=[];
+  for(var i=0;i<s.filas.length;i++){
+    var f=s.filas[i];
+    filas.push({pabellon:f.pabellon,sl:f.sl,celdas:f.celdas,accion:f.accion,repuesto:getRepuestoFinal(f),cantidad:f.cantidad});
+  }
+  var datos={fecha:s.fecha,sector:s.sector,io:s.io,actividades:s.actividades,actOtro:s.actOtro,estados:s.estados,observaciones:s.observaciones,filas:filas};
+  fetch(APPS_SCRIPT_URL, {
+    method:"POST", mode:"no-cors",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(datos)
+  }).then(function(){
+    var idBase="M1-"+s.fecha.replace(/-/g,"");
+    sectores[activeSector].enviado=true;
+    sectores[activeSector].idBase=idBase;
+    guardarEstado();
+    showMsg("✅ Datos enviados correctamente.");
+    render();
+  }).catch(function(){
+    showMsg("❌ Error de conexión. Reintenta cuando haya internet.",false);
+  });
+}
+
+function limpiarHoja() {
+  var sector=sectores[activeSector].sector;
+  sectores[activeSector]=emptySector();
+  sectores[activeSector].sector=sector;
+  currentTab="datos"; render(); guardarEstado();
+  showMsg("✅ Hoja limpia para nuevo reporte.");
+}
+
+function confirmarEliminar(i) {
+  confirmDeleteIdx=i;
+  var s=sectores[i];
+  var msg=s.enviado
+    ?"Los datos de "+(s.sector||"Sector "+(i+1))+" ya están en la BD. ¿Eliminar esta hoja?"
+    :"⚠️ Los datos de "+(s.sector||"Sector "+(i+1))+" NO han sido enviados. Se perderán. ¿Eliminar igual?";
+  document.getElementById("modalMsg").textContent=msg;
+  document.getElementById("overlay").style.display="flex";
+}
+function closeModal(){ document.getElementById("overlay").style.display="none"; }
+function doDelete(){
+  sectores.splice(confirmDeleteIdx,1);
+  activeSector=Math.max(0,confirmDeleteIdx-1);
+  closeModal(); guardarEstado(); render();
+}
+
+function showMsg(txt,ok){
+  if(ok===undefined) ok=true;
+  var el=document.getElementById("msgBar");
+  el.textContent=txt; el.className="msg "+(ok?"ok":"err");
+  el.style.display="block";
+  setTimeout(function(){el.style.display="none";},3500);
+}
+
+var APP_VERSION = "4.0";
+
+function guardarEstado() {
+  try {
+    localStorage.setItem("reporte_pesaje_m1", JSON.stringify({
+      version: APP_VERSION,
+      sectores:sectores, activeSector:activeSector, currentTab:currentTab
+    }));
+  } catch(e) {}
+}
+
+function cargarEstado() {
+  try {
+    var data=localStorage.getItem("reporte_pesaje_m1");
+    if (data) {
+      var estado=JSON.parse(data);
+      if (!estado.version || estado.version !== APP_VERSION) {
+        localStorage.removeItem("reporte_pesaje_m1");
+        sectores=[emptySector()];
+        activeSector=0;
+        currentTab="datos";
+        return;
+      }
+      if (estado.sectores&&estado.sectores.length>0) {
+        sectores=estado.sectores;
+        activeSector=estado.activeSector||0;
+        currentTab=estado.currentTab||"datos";
+      }
+    }
+  } catch(e) {
+    localStorage.removeItem("reporte_pesaje_m1");
+  }
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+cargarEstado();
+render();
+</script>
+</body>
+</html>
